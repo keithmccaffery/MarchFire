@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+
+{% block title %}Report{% endblock %}
+
+{% block main %}
+<h3>Report of the defect fire assets for the Building</h3>
+<div style= "text-align: left;">
+    {% for result in results %}
+    <h4>{{result.door}}</h4>
+    <h5>Defect: </h5>
+    <p>{{result.fault }}</p>
+    <br>
+    <p>***Placeholder photo while this page is under construction***</p>
+    <img src="/static/IMG_20230303_152806.jpg" alt="Defect" width="500" height="600">
+    <br>
+    <h5>Remedy: </h5>
+    <p>{{result.remedy }}</p> <br>
+    <br>
+    <h5>Additional Information:</h5>
+    <p>{{result.comment }}</p> <br>
+    <br>
+    <hr>
+    <br>
+    {% endfor %}
+</div>
+
+
+
+
+
+{% endblock %}
