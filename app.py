@@ -163,6 +163,7 @@ def doors():
     door = request.form.get("door")
     door_fault = request.form.get("door_fault")
     comment = request.form.get("comment")
+    image_url = request.form.get("imageUrl")
     fault = ''
     remedy = ''
 
@@ -205,8 +206,8 @@ def doors():
         ic(type(fault))
         ic(type(remedy))
 
-        db.execute("INSERT INTO results (user_id, door, fault_id, fault, remedy, comment ) VALUES (:user_id, :door, :door_fault, :fault, :remedy, :comment )",
-                   user_id=session["user_id"], door=door, door_fault=door_fault, fault=fault, remedy=remedy, comment=comment)
+        db.execute("INSERT INTO results (user_id, door, fault_id, fault, remedy, comment, image_url) VALUES (:user_id, :door, :door_fault, :fault, :remedy, :comment, :image_url)",
+           user_id=session["user_id"], door=door, door_fault=door_fault, fault=fault, remedy=remedy, comment=comment, image_url=image_url)
        # More remnants of the lines that I  needed to solve the data type
         print(RESULTS[door])
         return redirect("/results")
