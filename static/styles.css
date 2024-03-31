@@ -21,3 +21,16 @@ nav .navbar-brand .green
 {
     color: #2e944b;
 }
+@media screen and (max-width: 600px) {
+    .door-fault-select {
+        font-size: 12px; /* Reduced font size */
+    }
+    .modal-dialog {
+        max-width: 80%; /* Reduced modal width */
+    }
+}
+@media screen and (max-width: 600px) {
+    .main-heading {
+        font-size: 14px;
+    }
+}

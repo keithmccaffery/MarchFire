@@ -13,7 +13,7 @@
 </div>
         <form action="{{ url_for('doors') }}" method="post">
             <input autocomplete="off" autofocus name="door" placeholder="Door Location & Identity" type="text">
-            <select name="door_fault">
+            <select name="door_fault" class="door-fault-select">
                 <option disabled selected>Door Inspection Criteria</option>
                 {% for door_fault in door_faults %}
                     <option value="{{door_fault['fault_id'] }}">{{  door_fault['inspect'] }}</option>
@@ -25,4 +25,9 @@
             {% include 'capture.html' %}
             <input type="hidden" id="imageUrlInput" name="imageUrl">
         </form>
+        <script>
+            // This script stores the viewport size in a cookie
+            document.cookie = "viewportWidth=" + window.innerWidth;
+        </script>
+        <script src="{{ url_for('static', filename='main.js') }}"></script>
 {% endblock %}
