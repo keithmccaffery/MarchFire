@@ -30,5 +30,5 @@ function updateHeadingText() {
 // Call the function when the window is resized
 window.onresize = updateHeadingText;
 
-// Call the function when the page is loaded
-window.onload = updateHeadingText;
+// Call the function when the DOM is fully loaded
+document.addEventListener('DOMContentLoaded', updateHeadingText);
