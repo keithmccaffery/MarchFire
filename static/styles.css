@@ -34,3 +34,10 @@ nav .navbar-brand .green
         font-size: 14px;
     }
 }
+.content-box {
+    border: 1px solid #000;  /* Add a border */
+    padding: 20px;  /* Add some padding */
+    margin-bottom: 20px;  /* Add some margin at the bottom */
+    background-color: #f9f9f9;  /* Add a background color */
+    text-align: left;  /* Align the text to the left */
+}

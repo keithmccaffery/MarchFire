@@ -3,8 +3,8 @@
 {% block title %}Report{% endblock %}
 
 {% block main %}
-<h3>Report of the defect fire assets for the Building</h3>
-<div style= "text-align: left;">
+<h3>Report of the defect fire assets for the Building {{ username }}</h3>
+<div class="content-box">
     {% for result in results %}
     <h4>{{result.door}}</h4>
     <h5>Defect: </h5>

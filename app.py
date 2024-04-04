@@ -133,6 +133,9 @@ def login():
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
 
+        # Remember the username
+        session["username"] = request.form.get("username")
+
         # Redirect user to home page
         return redirect("/")
 
@@ -347,7 +350,7 @@ def report():
                         )
 
     # Render history page with defects
-    return render_template("report.html", results=results)
+    return render_template("report.html", results=results, username=session['username'])
 
 @app.route("/results")
 @login_required
@@ -356,4 +359,4 @@ def results():
         "SELECT * FROM results WHERE user_id = :user_id ORDER BY timestamp DESC", user_id=session["user_id"]
     )
 
-    return render_template("results.html", results=results)
+    return render_template("results.html", results=results, username=session['username'])
