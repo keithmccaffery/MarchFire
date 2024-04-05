@@ -13,6 +13,7 @@
 </div>
         <form action="{{ url_for('doors') }}" method="post">
             <input autocomplete="off" autofocus name="door" placeholder="Door Location & Identity" type="text">
+            <br><br>
             <select name="door_fault" class="door-fault-select">
                 <option disabled>Door Inspection Criteria</option>
                 <option selected value="0">Door sound - record status & image otherwise select from from drop down menu</option>
@@ -20,8 +21,8 @@
                     <option value="{{door_fault['fault_id'] }}">{{  door_fault['inspect'] }}</option>
                 {% endfor %}
             </select>
-            <br><input autocomplete="off" autofocus name="comment" placeholder=" Additional comment " type="text"><br>
-            <button type="submit">Log door fault</button>
+            <br><br><input autocomplete="off" autofocus name="comment" placeholder=" Additional comment " type="text"><br>
+            <br><button type="submit">Log door fault</button><br><br
             <!-- Include capture.html for capturing an image -->
             {% include 'capture.html' %}
             <input type="hidden" id="imageUrlInput" name="imageUrl">

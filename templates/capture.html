@@ -6,10 +6,16 @@
     <title>Camera and Azure Storage Example</title>
 </head>
 <body>
-    <input type="file" accept="image/*" capture="camera" id="fileInput">
-    <button onclick="uploadImage()">Upload Image</button>
+    <label for="fileInput" class="custom-file-upload">Capture Image<span id="fileName"></span></label>
+    <input type="file" accept="image/*" capture="camera" id="fileInput" style="display: none;" onchange="updateFileName()">
+    <br><br><button onclick="uploadImage()">Upload Image</button><br><br>
 
     <script>
+        function updateFileName() {
+            var input = document.getElementById('fileInput');
+            var fileName = input.value.split('\\').pop();
+            document.getElementById('fileName').textContent = " - " + fileName;
+        }
         const storageAccountName = 'firstfire';
         const containerName = 'firedoors1';
         sasToken = "?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D";

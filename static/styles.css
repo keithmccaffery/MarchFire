@@ -41,3 +41,20 @@ nav .navbar-brand .green
     background-color: #f9f9f9;  /* Add a background color */
     text-align: left;  /* Align the text to the left */
 }
+.custom-file-upload {
+    padding: 10px;
+    cursor: pointer;
+    background-color: #4CAF50; /* Green */
+    border: none;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    transition-duration: 0.4s;
+}
+
+.custom-file-upload:hover {
+    background-color: #45a049;
+}
