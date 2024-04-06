@@ -5,7 +5,7 @@ import csv
 import json
 
 from cs50 import SQL
-from flask import Flask, flash, redirect, render_template, request, session
+from flask import Flask, flash, redirect, render_template, request, session, url_for
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 from icecream import ic
@@ -355,6 +355,10 @@ def report():
 @app.route("/results")
 @login_required
 def results():
+    # Check if 'username' is in the session
+    if 'username' not in session:
+        # If not, redirect to the login page
+        return redirect(url_for('login'))
     results = db.execute(
         "SELECT * FROM results WHERE user_id = :user_id ORDER BY timestamp DESC", user_id=session["user_id"]
     )
