@@ -5,8 +5,34 @@
 {% endblock %}
 
 {% block main %}
-    <h1>Emergency Lighting</h1>
-    <br>
-    <br>
-    <p>To do - this page is still under construction!</p>
+<h3>Emergency Lighting Inspections</h3>
+<div style= "text-align: left;">
+    <p > 1. Input the location or identity of the door being inpected.</p>
+    <p>2. Selection menu is 4 criteria for inspection.</p>
+    <p>3. For each item the light fails to pass, log the fault which be recorded on results page.</p>
+    <p>4. A light could fail on more than one criteria, navigate back to the Doors page to complete the assessment see 1. above</p>
+    <p>4. When the assessment for the light is complete, enter the location or idendity of the door see 1. above or go to another asset class</p>
+</div>
+        <form id="emLightsForm" action="{{ url_for('em_lights') }}" method="post">
+            <input autocomplete="off" autofocus name="light" placeholder="Light Location & Identity" type="text">
+            <br><br>
+            <select name="light_fault" class="light-fault-select">
+                <option disabled>Light Inspection Criteria</option>
+                <option selected value="0">Light sound - record status & image, otherwise select from from drop down menu</option>
+                {% for light_fault in light_faults %}
+                    <option value="{{light_fault['fault_id'] }}">{{  light_fault['inspect'] }}</option>
+                {% endfor %}
+            </select>
+            <br><br><input autocomplete="off" autofocus name="comment" placeholder=" Additional comment " type="text"><br>
+            <br><button type="submit">Log light fault</button><br><br>
+            <!-- Include capture.html for capturing an image -->
+            {% include 'capture.html' %}
+            <input type="hidden" id="imageUrlInput" name="imageUrl">
+        </form>
+        <script>
+            // This script stores the viewport size in a cookie
+            document.cookie = "viewportWidth=" + window.innerWidth;
+        </script>
+        <script src="{{ url_for('static', filename='main.js') }}"></script>
 {% endblock %}
+

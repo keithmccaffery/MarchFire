@@ -19,7 +19,7 @@ db = SQL("sqlite:///final.db")
 RESULTS = {}
 
 DOOR_FAULTS = db.execute("SELECT * FROM doorfixes")
-
+LIGHT_FAULTS = db.execute("SELECT * FROM em_lightfixes")
 
 # Custom filter
 # app.jinja_env.filters["usd"] = usd
@@ -169,7 +169,7 @@ def doors():
     image_url = request.form.get("imageUrl")
     fault = ''
     remedy = ''
-
+    asset = door
     if request.method == "POST":
         RESULTS[door] = door_fault
         ic(door_fault)
@@ -209,8 +209,10 @@ def doors():
         ic(type(fault))
         ic(type(remedy))
 
-        db.execute("INSERT INTO results (user_id, door, fault_id, fault, remedy, comment, image_url) VALUES (:user_id, :door, :door_fault, :fault, :remedy, :comment, :image_url)",
-           user_id=session["user_id"], door=door, door_fault=door_fault, fault=fault, remedy=remedy, comment=comment, image_url=image_url)
+        from datetime import datetime
+
+        db.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, image_url, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :image_url, :timestamp)",
+                    user_id=session["user_id"], asset=asset, fault_id=door_fault, fault=fault, remedy=remedy, comment=comment, image_url=image_url, timestamp=datetime.now())
        # More remnants of the lines that I  needed to solve the data type
         print(RESULTS[door])
         return redirect("/results")
@@ -219,24 +221,25 @@ def doors():
         return render_template("doors.html",  door_faults=DOOR_FAULTS)
 
 # These following functions could be completed as per the doors method above, however, since hearing about OOP
-# it maybe better to writer app.py having classes producing the objects.
+# it maybe better to write app.py having classes producing the objects.
 @app.route("/em_lights", methods=["POST", "GET"])
 def em_lights():
-    return render_template("em_lights.html")
-"""
-    door = request.form.get("door")
-    door_fault = request.form.get("door_fault")
+    if request.method == "POST":
+        light = request.form.get("light")
+        light_fault = request.form.get("light_fault")
+        comment = request.form.get("comment")
+        image_url = request.form.get("imageUrl")
+        if not image_url:
+            print("No image URL provided")
+        # rest of your code...
+        # Handle the error appropriately
     fault = ''
     remedy = ''
-    #Still trying to get the remedy item from this form to input into results table.
-    #remedy = request.form.get("remedy")
 
     if request.method == "POST":
-        pass
-
-        RESULTS[door] = door_fault
-        ic(door_fault)
-        ic(type(door_fault))
+        RESULTS[light] = light_fault
+        ic(light_fault)
+        ic(type(light_fault))
         fault = ''
         remedy = ''
         faultDict = ()
@@ -245,20 +248,26 @@ def em_lights():
         remedyDict = ()
         remedyStr = {}
 
-        #trouble trying to get the data from the databases to use in the next db.execute to produce the RESULTS
-        fault=db.execute("SELECT fault FROM doorfixes WHERE fault_id = :door_fault",
-                    door_fault=door_fault)
-        remedy=db.execute("SELECT remedy FROM doorfixes WHERE fault_id = :door_fault",
-                    door_fault=door_fault)
-        ic(remedy)
-        faultDict   = fault [0]
-        faultStr = faultDict  ['fault']
-
-        remedyDict = remedy [0]
-        remedyStr= remedyDict  ['remedy']
-
-        remedy = remedyStr
-        fault = faultStr
+        # This is working as expected but I have kept the ic views which helped to solve the problem of getting
+        # the strings for the faults and the remedies out of the selection results.
+        fault=db.execute("SELECT fault FROM em_lightfixes WHERE fault_id = :light_fault", light_fault=light_fault)
+        if fault:
+            faultDict = fault[0]
+            faultStr = faultDict['fault']
+            fault = faultStr
+        else:
+            print("No fault found for the given light_fault")
+        remedy=db.execute("SELECT remedy FROM em_lightfixes WHERE fault_id = :light_fault", light_fault=light_fault)
+        if remedy:
+            remedyDict = remedy[0]
+            remedyStr = remedyDict['remedy']
+            remedy = remedyStr
+        else:
+            print("No remedy found for the given light_fault")
+        # The strings were saved into these variables to build the results table below. I have left some of the
+        # "debugging tools" that I used to see what was being passed around.
+        
+        
 
 
         print(fault)
@@ -269,16 +278,21 @@ def em_lights():
         ic(type(fault))
         ic(type(remedy))
 
-        db.execute("INSERT INTO results (user_id, door, fault_id, fault, remedy ) VALUES (:user_id, :door, :door_fault, :fault, :remedy )",
-                   user_id=session["user_id"], door=door, door_fault=door_fault, fault=fault, remedy=remedy)
-       # print(remedy)
-        print(RESULTS[door])
+        from datetime import datetime
+
+        # If fault and remedy are not None, use them as they are. If they are None, replace with 'NULL'
+        fault_str = fault if fault else 'NULL'
+        remedy_str = remedy if remedy else 'NULL'
+
+        db.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, image_url, timestamp) VALUES (:user_id, :light, :light_fault, :fault, :remedy, :comment, :image_url, :timestamp)",
+           user_id=session["user_id"], light=light, light_fault=light_fault, fault=fault_str, remedy=remedy_str, comment=comment, image_url=image_url, timestamp=datetime.now())
+       # More remnants of the lines that I  needed to solve the data type
+        print(RESULTS[light])
         return redirect("/results")
 
-
     else:
-        return render_template("em_lights.html") #,  door_faults=DOOR_FAULTS)
-"""
+        return render_template("em_lights.html",  light_faults=LIGHT_FAULTS)
+
 
 @app.route("/fire_ext", methods=["POST", "GET"])
 def fire_ext():
