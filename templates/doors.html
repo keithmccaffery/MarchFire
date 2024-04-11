@@ -24,7 +24,7 @@
             <br><br><input autocomplete="off" autofocus name="comment" placeholder=" Additional comment " type="text"><br>
             <br><button type="submit">Log door fault</button><br><br>
             <!-- Include capture.html for capturing an image -->
-            {% include 'capture.html' %}
+            {% include 'captureD.html' %}
             <input type="hidden" id="imageUrlInput" name="imageUrl">
         </form>
         <script>
@@ -32,4 +32,9 @@
             document.cookie = "viewportWidth=" + window.innerWidth;
         </script>
         <script src="{{ url_for('static', filename='main.js') }}"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', (event) => {
+                console.log(document.documentElement.innerHTML);
+            });
+        </script>
 {% endblock %}

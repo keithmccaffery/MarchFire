@@ -224,6 +224,68 @@ def doors():
 # it maybe better to write app.py having classes producing the objects.
 @app.route("/em_lights", methods=["POST", "GET"])
 def em_lights():
+    light = request.form.get("light")
+    light_fault = request.form.get("light_fault")
+    comment = request.form.get("comment")
+    image_url = request.form.get("imageUrl")
+    fault = ''
+    remedy = ''
+    asset = light
+    if request.method == "POST":
+        RESULTS[light] = light_fault
+        ic(light_fault)
+        ic(type(light_fault))
+        fault = ''
+        remedy = ''
+        faultDict = ()
+        faultStr = {}
+
+        remedyDict = ()
+        remedyStr = {}
+
+        # This is working as expected but I have kept the ic views which helped to solve the problem of getting
+        # the strings for the faults and the remedies out of the selection results.
+        fault=db.execute("SELECT fault FROM em_lightfixes WHERE fault_id = :light_fault",
+                    light_fault=light_fault)
+        remedy=db.execute("SELECT remedy FROM em_lightfixes WHERE fault_id = :light_fault",
+                    light_fault=light_fault)
+        ic(remedy)
+        faultDict   = fault [0]
+        faultStr = faultDict  ['fault']
+
+        remedyDict = remedy [0]
+        remedyStr= remedyDict  ['remedy']
+
+        # The strings were saved into these variables to build the results table below. I have left some of the
+        # "debugging tools" that I used to see what was being passed around.
+        remedy = remedyStr
+        fault = faultStr
+
+
+        print(fault)
+        print(remedy)
+
+        ic(fault)
+        ic(remedy)
+        ic(type(fault))
+        ic(type(remedy))
+
+        from datetime import datetime
+
+        db.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, image_url, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :image_url, :timestamp)",
+                    user_id=session["user_id"], asset=asset, fault_id=light_fault, fault=fault, remedy=remedy, comment=comment, image_url=image_url, timestamp=datetime.now())
+       # More remnants of the lines that I  needed to solve the data type
+        print(RESULTS[light])
+        return redirect("/results")
+
+    else:
+        return render_template("em_lights.html",  light_faults=LIGHT_FAULTS)
+
+# These following functions could be completed as per the doors method above, however, since hearing about OOP
+# it maybe better to write app.py having classes producing the objects.
+
+"""@app.route("/em_lights", methods=["POST", "GET"])
+def em_lights():
     if request.method == "POST":
         light = request.form.get("light")
         light_fault = request.form.get("light_fault")
@@ -292,7 +354,7 @@ def em_lights():
 
     else:
         return render_template("em_lights.html",  light_faults=LIGHT_FAULTS)
-
+"""
 
 @app.route("/fire_ext", methods=["POST", "GET"])
 def fire_ext():
