@@ -48,13 +48,13 @@
             }
         }
 
-        document.querySelector('form[action="/fire_ext"]').addEventListener('submit', function(event) {
+        document.querySelector('form[action="/em_lights"]').addEventListener('submit', function(event) {
             event.preventDefault();  // Prevent the form from being submitted immediately
 
             var file = document.querySelector('input[type="file"]').files[0];
             uploadImage(file).then(function() {
                 // Check if the form exists before trying to submit it
-                var formElement = document.querySelector('form[action="/fire_ext"]');
+                var formElement = document.querySelector('form[action="/em_lights"]');
                 if (formElement) {
                     formElement.submit();
                 }
