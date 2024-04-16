@@ -11,7 +11,11 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from icecream import ic
 
 from helpers import apology, login_required, lookup, usd
+from datetime import datetime
+import pytz
 
+eastern_australia_tz = pytz.timezone('Australia/Sydney')
+current_time = datetime.now(eastern_australia_tz)
 # Configure application
 app = Flask(__name__)
 
@@ -212,7 +216,7 @@ def doors():
         from datetime import datetime
 
         db.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, image_url, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :image_url, :timestamp)",
-                    user_id=session["user_id"], asset=asset, fault_id=door_fault, fault=fault, remedy=remedy, comment=comment, image_url=image_url, timestamp=datetime.now())
+                    user_id=session["user_id"], asset=asset, fault_id=door_fault, fault=fault, remedy=remedy, comment=comment, image_url=image_url, timestamp=datetime.now(eastern_australia_tz))
        # More remnants of the lines that I  needed to solve the data type
         print(RESULTS[door])
         return redirect("/results")
@@ -273,7 +277,7 @@ def em_lights():
         from datetime import datetime
 
         db.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, image_url, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :image_url, :timestamp)",
-                    user_id=session["user_id"], asset=asset, fault_id=light_fault, fault=fault, remedy=remedy, comment=comment, image_url=image_url, timestamp=datetime.now())
+                    user_id=session["user_id"], asset=asset, fault_id=light_fault, fault=fault, remedy=remedy, comment=comment, image_url=image_url, timestamp=datetime.now(eastern_australia_tz))
        # More remnants of the lines that I  needed to solve the data type
         print(RESULTS[light])
         return redirect("/results")
@@ -336,7 +340,7 @@ def fire_ext():
         from datetime import datetime
 
         db.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, image_url, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :image_url, :timestamp)",
-                    user_id=session["user_id"], asset=asset, fault_id=fireEx_fault, fault=fault, remedy=remedy, comment=comment, image_url=image_url, timestamp=datetime.now())
+                    user_id=session["user_id"], asset=asset, fault_id=fireEx_fault, fault=fault, remedy=remedy, comment=comment, image_url=image_url, timestamp=datetime.now(eastern_australia_tz))
        # More remnants of the lines that I  needed to solve the data type
         print(RESULTS[fireEx])
         return redirect("/results")
