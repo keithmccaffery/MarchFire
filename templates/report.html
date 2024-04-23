@@ -11,7 +11,9 @@
     <p>{{result.fault }}</p>
     <br>
     
-    <img src="{{ result.image_url }}" alt="Defect">
+    {% for image_url in result.images %}
+        <img src="{{ image_url }}" alt="Defect">
+    {% endfor %}
     <br>
     <h5>Remedy: </h5>
     <p>{{result.remedy }}</p> <br>

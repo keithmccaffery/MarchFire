@@ -171,6 +171,9 @@ def doors():
     door_fault = request.form.get("door_fault")
     comment = request.form.get("comment")
     image_url = request.form.get("imageUrl")
+    print(request.form)  # Logs the form data sent in the request
+    image_urls = request.form.getlist("imageUrls[]")
+    print(image_urls)  # Logs the list of image URLs
     fault = ''
     remedy = ''
     asset = door
@@ -215,12 +218,31 @@ def doors():
 
         from datetime import datetime
 
-        db.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, image_url, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :image_url, :timestamp)",
-                    user_id=session["user_id"], asset=asset, fault_id=door_fault, fault=fault, remedy=remedy, comment=comment, image_url=image_url, timestamp=datetime.now(eastern_australia_tz))
+        # Insert a row into the results table
+        db.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)",
+                user_id=session["user_id"], asset=asset, fault_id=door_fault, fault=fault, remedy=remedy, comment=comment, timestamp=datetime.now(eastern_australia_tz))
+
+        # Get the ID of the last inserted row
+        result_id = db.execute("SELECT last_insert_rowid()")[0]["last_insert_rowid()"]
+
+
        # More remnants of the lines that I  needed to solve the data type
         print(RESULTS[door])
-        return redirect("/results")
 
+        image_urls = request.form.getlist("imageUrls")
+        print(f"result_id: {result_id}")  # Log the value of result_id
+        print(f"image_urls: {image_urls}")  # Log the value of image_urls
+        for image_url in image_urls:
+            print(f"image_url: {image_url}")  # Log the value of image_url
+            try:
+                print("Inside the try block")  # Log a message
+                db.execute("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)",
+                            result_id=result_id, image_url=image_url)
+            except Exception as e:
+                print(f"An error occurred while inserting into the images table: {e}")
+
+        return redirect("/results")
+        
     else:
         return render_template("doors.html",  door_faults=DOOR_FAULTS)
 
@@ -371,5 +393,12 @@ def results():
     results = db.execute(
         "SELECT * FROM results WHERE user_id = :user_id ORDER BY timestamp DESC", user_id=session["user_id"]
     )
+
+    # Get the image URLs for each result
+    for result in results:
+        images = db.execute(
+            "SELECT image_url FROM images WHERE result_id = :result_id", result_id=result["id"]
+        )
+        result["images"] = [image["image_url"] for image in images]
 
     return render_template("results.html", results=results, username=session['username'])
