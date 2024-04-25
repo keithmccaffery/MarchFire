@@ -170,10 +170,10 @@ def doors():
     door = request.form.get("door")
     door_fault = request.form.get("door_fault")
     comment = request.form.get("comment")
-    image_url = request.form.get("imageUrl")
+    #image_url = request.form.get("imageUrl").split(',')
     print(request.form)  # Logs the form data sent in the request
-    image_urls = request.form.getlist("imageUrls[]")
-    print(image_urls)  # Logs the list of image URLs
+    print(door)  # Logs the door location
+    #print(image_urls)  # Logs the list of image URLs
     fault = ''
     remedy = ''
     asset = door
@@ -225,19 +225,18 @@ def doors():
         # Get the ID of the last inserted row
         result_id = db.execute("SELECT last_insert_rowid()")[0]["last_insert_rowid()"]
 
+        # Get the imageUrl string from the form and split it into a list of URLs
+        image_urls = request.form.get("imageUrl").split(';')
 
-       # More remnants of the lines that I  needed to solve the data type
-        print(RESULTS[door])
-
-        image_urls = request.form.getlist("imageUrls")
         print(f"result_id: {result_id}")  # Log the value of result_id
         print(f"image_urls: {image_urls}")  # Log the value of image_urls
+
         for image_url in image_urls:
             print(f"image_url: {image_url}")  # Log the value of image_url
             try:
                 print("Inside the try block")  # Log a message
                 db.execute("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)",
-                            result_id=result_id, image_url=image_url)
+                        result_id=result_id, image_url=image_url)
             except Exception as e:
                 print(f"An error occurred while inserting into the images table: {e}")
 
@@ -377,11 +376,27 @@ def report():
     """Show report of results for the building"""
     # Query database for user's results, ordered by the most recent first. Maybe need to put a time cut off when printing this report.
     results = db.execute(
-        "SELECT * FROM results WHERE user_id = :user_id ORDER BY timestamp DESC LIMIT 10", user_id=session["user_id"]
-                        )
+        """
+        SELECT results.*, images.image_url 
+        FROM results 
+        LEFT JOIN images ON results.id = images.result_id 
+        WHERE results.user_id = :user_id 
+        ORDER BY results.timestamp DESC 
+        LIMIT 10
+        """, 
+        user_id=session["user_id"]
+    )
+
+    # Group results by result_id, each result will have a list of image_urls
+    grouped_results = {}
+    for result in results:
+        if result['id'] not in grouped_results:
+            grouped_results[result['id']] = result
+            grouped_results[result['id']]['image_urls'] = []
+        grouped_results[result['id']]['image_urls'].append(result['image_url'])
 
     # Render history page with defects
-    return render_template("report.html", results=results, username=session['username'])
+    return render_template("report.html", results=grouped_results.values(), username=session['username'])
 
 @app.route("/results")
 @login_required
