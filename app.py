@@ -252,7 +252,10 @@ def em_lights():
     light = request.form.get("light")
     light_fault = request.form.get("light_fault")
     comment = request.form.get("comment")
-    image_url = request.form.get("imageUrl")
+    #image_url = request.form.get("imageUrl").split(',')
+    print(request.form)  # Logs the form data sent in the request
+    print(light)  # Logs the light location
+    #print(image_urls)  # Logs the list of image URLs
     fault = ''
     remedy = ''
     asset = light
@@ -276,6 +279,7 @@ def em_lights():
                     light_fault=light_fault)
         ic(remedy)
         faultDict   = fault [0]
+        #print(faultDict)
         faultStr = faultDict  ['fault']
 
         remedyDict = remedy [0]
@@ -297,14 +301,33 @@ def em_lights():
 
         from datetime import datetime
 
-        db.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, image_url, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :image_url, :timestamp)",
-                    user_id=session["user_id"], asset=asset, fault_id=light_fault, fault=fault, remedy=remedy, comment=comment, image_url=image_url, timestamp=datetime.now(eastern_australia_tz))
-       # More remnants of the lines that I  needed to solve the data type
-        print(RESULTS[light])
-        return redirect("/results")
+        # Insert a row into the results table
+        db.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)",
+                user_id=session["user_id"], asset=asset, fault_id=light_fault, fault=fault, remedy=remedy, comment=comment, timestamp=datetime.now(eastern_australia_tz))
 
+        # Get the ID of the last inserted row
+        result_id = db.execute("SELECT last_insert_rowid()")[0]["last_insert_rowid()"]
+
+        # Get the imageUrl string from the form and split it into a list of URLs
+        image_urls = request.form.get("imageUrl").split(';')
+
+        print(f"result_id: {result_id}")  # Log the value of result_id
+        print(f"image_urls: {image_urls}")  # Log the value of image_urls
+
+        for image_url in image_urls:
+            print(f"image_url: {image_url}")  # Log the value of image_url
+            try:
+                print("Inside the try block")  # Log a message
+                db.execute("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)",
+                        result_id=result_id, image_url=image_url)
+            except Exception as e:
+                print(f"An error occurred while inserting into the images table: {e}")
+
+        return redirect("/results")
+        
     else:
         return render_template("em_lights.html",  light_faults=LIGHT_FAULTS)
+
 
 # These following functions could be completed as per the doors method above, however, since hearing about OOP
 # it maybe better to write app.py having classes producing the objects.
@@ -315,10 +338,13 @@ def fire_ext():
     fireEx = request.form.get("fireEx")
     fireEx_fault = request.form.get("fireEx_fault")
     comment = request.form.get("comment")
-    image_url = request.form.get("imageUrl")
+    #image_url = request.form.get("imageUrl").split(',')
+    print(request.form)  # Logs the form data sent in the request
+    print(fireEx)  # Logs the fireEx location
+    #print(image_urls)  # Logs the list of image URLs
     fault = ''
     remedy = ''
-    asset = fireEx
+    asset = fireEx 
     if request.method == "POST":
         RESULTS[fireEx] = fireEx_fault
         ic(fireEx_fault)
@@ -333,9 +359,9 @@ def fire_ext():
 
         # This is working as expected but I have kept the ic views which helped to solve the problem of getting
         # the strings for the faults and the remedies out of the selection results.
-        fault=db.execute("SELECT fault FROM fireExfixes WHERE fault_id = :fireEx_fault",
+        fault=db.execute("SELECT fault FROM fireEXfixes WHERE fault_id = :fireEx_fault",
                     fireEx_fault=fireEx_fault)
-        remedy=db.execute("SELECT remedy FROM fireExfixes WHERE fault_id = :fireEx_fault",
+        remedy=db.execute("SELECT remedy FROM fireEXfixes WHERE fault_id = :fireEx_fault",
                     fireEx_fault=fireEx_fault)
         ic(remedy)
         faultDict   = fault [0]
@@ -360,14 +386,33 @@ def fire_ext():
 
         from datetime import datetime
 
-        db.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, image_url, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :image_url, :timestamp)",
-                    user_id=session["user_id"], asset=asset, fault_id=fireEx_fault, fault=fault, remedy=remedy, comment=comment, image_url=image_url, timestamp=datetime.now(eastern_australia_tz))
-       # More remnants of the lines that I  needed to solve the data type
-        print(RESULTS[fireEx])
-        return redirect("/results")
+        # Insert a row into the results table
+        db.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)",
+                user_id=session["user_id"], asset=asset, fault_id=fireEx_fault, fault=fault, remedy=remedy, comment=comment, timestamp=datetime.now(eastern_australia_tz))
 
+        # Get the ID of the last inserted row
+        result_id = db.execute("SELECT last_insert_rowid()")[0]["last_insert_rowid()"]
+
+        # Get the imageUrl string from the form and split it into a list of URLs
+        image_urls = request.form.get("imageUrl").split(';')
+
+        print(f"result_id: {result_id}")  # Log the value of result_id
+        print(f"image_urls: {image_urls}")  # Log the value of image_urls
+
+        for image_url in image_urls:
+            print(f"image_url: {image_url}")  # Log the value of image_url
+            try:
+                print("Inside the try block")  # Log a message
+                db.execute("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)",
+                        result_id=result_id, image_url=image_url)
+            except Exception as e:
+                print(f"An error occurred while inserting into the images table: {e}")
+
+        return redirect("/results")
+        
     else:
         return render_template("fire_ext.html",  fireEx_faults=FIREEX_FAULTS)
+
 
 
 @app.route("/report")

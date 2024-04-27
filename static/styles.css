@@ -62,3 +62,19 @@ nav .navbar-brand .green
 .custom-file-upload:hover {
     background-color: #45a049;
 }
+.image-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+
+.image-box {
+    flex: 1 0 21%; /* Or whatever percentage you want */
+    margin: 1%;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+}
+
+.image-box img {
+    width: 100%;
+    height: auto;
+}
