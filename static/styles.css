@@ -63,18 +63,12 @@ nav .navbar-brand .green
     background-color: #45a049;
 }
 .image-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-around;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px; /* adjust this value to add space between images */
 }
 
-.image-box {
-    flex: 1 0 21%; /* Or whatever percentage you want */
-    margin: 1%;
-    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
-}
-
-.image-box img {
+.image-container img {
     width: 100%;
-    height: auto;
+    height: auto; /* maintain aspect ratio */
 }

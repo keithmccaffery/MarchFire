@@ -3,7 +3,7 @@
 {% block title %}Report{% endblock %}
 
 {% block main %}
-<h3>Report of the defect fire assets for the Building {{ username }}</h3>
+<h3>Report of the defective assets for the Building {{ username }}</h3>
 <div class="content-box">
     {% for result in results %}
     <h4>{{result.asset}}</h4>
@@ -13,9 +13,7 @@
     
     <div class="image-container">
         {% for url in result.image_urls %}
-            <div class="image-box">
-                <img src="{{ url }}" alt="Image">
-            </div>
+            <img src="{{ url }}" alt="Image">
         {% endfor %}
     </div>
     <br>

@@ -1,45 +1,52 @@
 {% extends "layout.html" %}
 
-{% block title %}Doors{% endblock %}
+{% block title %}Other assets{% endblock %}
 
 {% block main %}
-<h3>Door Inspections</h3>
+<h3>Other asset Inspections</h3>
+<!--
 <div style= "text-align: left;">
-    <p > 1. Input the location or identity of the door being inpected.</p>
+    <p > 1. Input the location or identity of the asset being inpected.</p>
     <p>2. Selection menu is 30 criteria for inspection.</p>
     <p>3. For each item the door fails to pass, log the fault which be recorded on results page.</p>
     <p>4. A door could fail on more than one criteria, navigate back to the Doors page to complete the assessment see 1. above</p>
     <p>4. When the assessment for the door is complete, enter the location or idendity of the door see 1. above or go to another asset class</p>
 </div>
-    <form action="/doors" method="post" enctype="multipart/form-data">
-        <input autocomplete="off" autofocus name="location" placeholder="Location (e.g., Unit 16 front door, L8)" type="text">
+-->
+    <form action="/other" method="post" enctype="multipart/form-data">
+        <input autocomplete="off" autofocus name="location" placeholder="Location (e.g., Unit 16 , L8)" type="text">
         <select name="assetType" class="asset-type-select">
             <option disabled>Select Asset Type</option>
-            <option value="Entrance door">Entrance door </option>
-            <option value="Fire stair door">Fire stair door </option>
-            <option value="Double door">Double door </option>
-            <option value="Garbage schute door">Garbage schute door </option>
-            <option value="Electrical cabinet door">Electrical cabinet door </option>
-            <option value="Telecoms cabinet door ">Telecoms cabinet door </option>
-            <option value="Storeroom door">Storeroom door </option>
-            <option value="Garbage bin room door">Garbage bin room door </option>
-            <option value="Office door">Office door </option>
-            <option value="Liftroom door">Liftroom door </option> 
-            <option value="Carpark egress door">Carpark egress door </option>
-            <option value="Swimming pool door">Swimming pool door </option>
-            <option value="Roof deck door ">Roof deck door </option>  
-            <option value="Non Fire rated door - no inpection">Non Fire rated door - no inpection </option>
-            
+            <option value="Balcony door">Balcony door </option>
+            <option value="Window">Window </option>
+            <option value="Wall">Wall </option>
+            <option value="Toilet">Toilet </option>
+            <option value="Lock">Lock </option>
+            <option value="Guttering">Guttering </option>
+            <option value="Fence">Fence </option>
+            <option value="Cabinet">Cabinet </option>
+            <option value="Wardrobe">Wardrobe </option>
+            <option value="Fence">Fence </option> 
+            <option value="Furniture">Furniture </option>
+            <option value="Deck">Deck </option>
+            <option value="Lighting">Lighting </option>    
+            <option value="Floor covering">Floor covering </option>
+            <option value="Gate">Gate </option>
         </select>    
         <br><br>
-            <select name="door_fault" class="door-fault-select">
+        <!--    
+        <select name="door_fault" class="door-fault-select">
                 <option disabled>Door Inspection Criteria</option>
                 <option selected value="0">Door sound - record status & image otherwise select from from drop down menu</option>
                 {% for door_fault in door_faults %}
                     <option value="{{door_fault['fault_id'] }}">{{  door_fault['inspect'] }}</option>
                 {% endfor %}
             </select>
-			<br><br>
+        -->
+        <input autocomplete="off" autofocus name="fault" placeholder=" Fault " type="text"><br>
+        <br><br>
+		<input autocomplete="off" autofocus name="remedy" placeholder=" Remedy " type="text"><br>	
+        <br><br>
         <input autocomplete="off" autofocus name="comment" placeholder=" Additional comment " type="text"><br>
         <!-- Your hidden file input field -->
         <input type="file" accept="image/*" capture="environment" id="fileInput" style="visibility: hidden; position: absolute;" onchange="updateFileName()">
@@ -48,7 +55,7 @@
         <br><button type="submit">Log Asset Checked</button><br><br>
         <div id="imageUrls"></div>
             <!-- Include capture.html for capturing an image -->
-            {% include 'captureD.html' %}
+            {% include 'captureO.html' %}
             <input type="hidden" id="imageUrlInput" name="imageUrl">
     </form>
 
@@ -89,7 +96,7 @@
     }
 
     // Add an event listener to the form submission event
-    document.querySelector('form[action="/doors"]').addEventListener('submit', function(event) {
+    document.querySelector('form[action="/other"]').addEventListener('submit', function(event) {
         event.preventDefault();  // Prevent the form from being submitted immediately
 
         // Get the selected files
@@ -99,7 +106,7 @@
         handleImageCapture(files);
 
         // Check if the form exists before trying to submit it
-        var formElement = document.querySelector('form[action="/doors"]');
+        var formElement = document.querySelector('form[action="/other"]');
         if (formElement) {
             formElement.submit();
         }

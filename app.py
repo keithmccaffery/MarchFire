@@ -165,9 +165,15 @@ def logout():
 # The doors function has been completed and works as expected. The other functions such as emergency lighting have
 # yet to be completed. Tables of inspection criteria need to be produced. The results can still be put into the
 # results table and will thus be seen in the final report.
+
+
 @app.route("/doors", methods=["POST", "GET"])
 def doors():
-    door = request.form.get("door")
+    asset_type = request.form.get('assetType')
+    location = request.form.get('location')
+    # Combine the asset type and location
+    door = f'{location} - {asset_type}'
+
     door_fault = request.form.get("door_fault")
     comment = request.form.get("comment")
     #image_url = request.form.get("imageUrl").split(',')
@@ -245,11 +251,18 @@ def doors():
     else:
         return render_template("doors.html",  door_faults=DOOR_FAULTS)
 
+
 # These following functions could be completed as per the doors method above, however, since hearing about OOP
 # it maybe better to write app.py having classes producing the objects.
 @app.route("/em_lights", methods=["POST", "GET"])
 def em_lights():
-    light = request.form.get("light")
+
+    # Get the asset type and location from the form data
+    asset_type = request.form.get('assetType')
+    location = request.form.get('location')
+    # Combine the asset type and location
+    light = f'{location} - {asset_type}'
+    
     light_fault = request.form.get("light_fault")
     comment = request.form.get("comment")
     #image_url = request.form.get("imageUrl").split(',')
@@ -335,7 +348,12 @@ def em_lights():
 
 @app.route("/fire_ext", methods=["POST", "GET"])
 def fire_ext():
-    fireEx = request.form.get("fireEx")
+    # Get the asset type and location from the form data
+    asset_type = request.form.get('assetType')
+    location = request.form.get('location')
+    # Combine the asset type and location
+    fireEx = f'{location} - {asset_type}'
+    
     fireEx_fault = request.form.get("fireEx_fault")
     comment = request.form.get("comment")
     #image_url = request.form.get("imageUrl").split(',')
@@ -412,6 +430,91 @@ def fire_ext():
         
     else:
         return render_template("fire_ext.html",  fireEx_faults=FIREEX_FAULTS)
+
+@app.route("/other", methods=["POST", "GET"])
+def other():
+    asset_type = request.form.get('assetType')
+    location = request.form.get('location')
+    # Combine the asset type and location
+    asset = f'{location} - {asset_type}'
+    fault = ''
+    remedy = ''
+    fault = request.form.get("fault")
+    remedy = request.form.get("remedy")
+    comment = request.form.get("comment")
+    #image_url = request.form.get("imageUrl").split(',')
+    print(request.form)  # Logs the form data sent in the request
+    print(asset)  # Logs the door location
+    #print(image_urls)  # Logs the list of image URLs
+    
+    #asset = door
+    if request.method == "POST":
+    #     RESULTS[door] = door_fault
+    #     ic(door_fault)
+    #     ic(type(door_fault))
+    #     fault = ''
+    #     remedy = ''
+    #     faultDict = ()
+    #     faultStr = {}
+
+    #     remedyDict = ()
+    #     remedyStr = {}
+
+        # This is working as expected but I have kept the ic views which helped to solve the problem of getting
+        # the strings for the faults and the remedies out of the selection results.
+        # fault=db.execute("SELECT fault FROM doorfixes WHERE fault_id = :door_fault",
+        #             door_fault=door_fault)
+        # remedy=db.execute("SELECT remedy FROM doorfixes WHERE fault_id = :door_fault",
+        #             door_fault=door_fault)
+        # ic(remedy)
+        # faultDict   = fault [0]
+        # faultStr = faultDict  ['fault']
+
+        # remedyDict = remedy [0]
+        # remedyStr= remedyDict  ['remedy']
+
+        # The strings were saved into these variables to build the results table below. I have left some of the
+        # "debugging tools" that I used to see what was being passed around.
+        # remedy = remedyStr
+        # fault = faultStr
+
+
+        print(fault)
+        print(remedy)
+
+        ic(fault)
+        ic(remedy)
+        ic(type(fault))
+        ic(type(remedy))
+
+        from datetime import datetime
+
+        # Insert a row into the results table
+        db.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)",
+                user_id=session["user_id"], asset=asset, fault_id=0, fault=fault, remedy=remedy, comment=comment, timestamp=datetime.now(eastern_australia_tz))
+
+        # Get the ID of the last inserted row
+        result_id = db.execute("SELECT last_insert_rowid()")[0]["last_insert_rowid()"]
+
+        # Get the imageUrl string from the form and split it into a list of URLs
+        image_urls = request.form.get("imageUrl").split(';')
+
+        print(f"result_id: {result_id}")  # Log the value of result_id
+        print(f"image_urls: {image_urls}")  # Log the value of image_urls
+
+        for image_url in image_urls:
+            print(f"image_url: {image_url}")  # Log the value of image_url
+            try:
+                print("Inside the try block")  # Log a message
+                db.execute("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)",
+                        result_id=result_id, image_url=image_url)
+            except Exception as e:
+                print(f"An error occurred while inserting into the images table: {e}")
+
+        return redirect("/results")
+        
+    else:
+        return render_template("other.html",  )
 
 
 

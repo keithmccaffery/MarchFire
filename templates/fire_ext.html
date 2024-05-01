@@ -12,7 +12,26 @@
     <p>4. When the assessment for the fire extinguisher is complete, enter the location or idendity of the fire extinguisher see 1. above or go to another asset class</p>
 </div>
     <form action="/fire_ext" method="post" enctype="multipart/form-data">
-        <input autocomplete="off" autofocus name="fireEx" placeholder="Fire Extinguisher Location & Identity" type="text">
+        <input autocomplete="off" autofocus name="location" placeholder="Location (e.g., L7 NE fire cabinet)" type="text">
+            
+            <select name="assetType" class="asset-type-select">
+                <option disabled>Select Asset Type</option>
+                <option value="2.3kg ABE Powder Type Portable Fire Extinguisher">2.3kg ABE Powder Type </option>
+                <option value="4.5kg ABE Powder Type Portable Fire Extinguisher">4.5kg  ABE Powder Type </option>
+                <option value="9.0kg ABE Powder Type Portable Fire Extinguisher">9.0kg  ABE Powder Type </option>
+                <option value="2.5kg BE Powder Type Portable Fire Extinguisher">2.5kg BE Powder Type </option>
+                <option value="4.5kg BE Powder Type Portable Fire Extinguisher">4.5kg BE Powder Type </option>
+                <option value="9.0kg BE Powder Type Portable Fire Extinguisher">9.0kg BE Powder Type </option>
+                <option value="2.0kg CO2 Type Portable Fire Extinguisher">2.0kg CO2 Type </option>
+                <option value="3.5kg CO2 Type Portable Fire Extinguisher">3.5kg CO2 Type </option>
+                <option value="5.0kg CO2 Type Portable Fire Extinguisher">5.0kg CO2 Type </option>
+                <option value="9.0L Air/Water Type Portable Fire Extinguisher">9.0L Air/Water Type </option>
+                <option value="9.0L AFFF Type Portable Fire Extinguisher">9.0L AFFF Type </option>
+                <option value="9.0L ECO Foam F3 Fluorine Free Foam Type Portable Fire Extinguisher">9.0L ECO Foam F3 Fluorine Free Foam Type </option>
+                <option value="2.0L Wet Chemical Type Portable Fire Extinguisher">2.0L Wet Chemical Type </option>
+                <option value="7.0L Wet Chemical Type Portable Fire Extinguisher">7.0L Wet Chemical Type </option>
+                
+            </select>
             <br><br>
             <select name="fireEx_fault" class="fireEx-fault-select">
                 <option disabled>Fire Extinguisher Inspection Criteria</option>
