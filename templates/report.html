@@ -4,6 +4,10 @@
 
 {% block main %}
 <h3>Report of the defective assets for the Building {{ username }}</h3>
+<!-- Button for PDF -->
+<form action="/create_pdf" method="post">
+    <input type="submit" value="Create PDF for download">
+</form>
 <div class="content-box">
     {% for result in results %}
     <h4>{{result.asset}}</h4>

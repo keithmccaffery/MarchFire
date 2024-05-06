@@ -1,11 +1,19 @@
 import os
 
 import csv
-
+import requests
+from PIL import Image as PilImage
+from reportlab.platypus import PageBreak
+from reportlab.platypus import BaseDocTemplate, Paragraph, Spacer, Frame, PageTemplate, Image
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from io import BytesIO
 import json
 
 from cs50 import SQL
-from flask import Flask, flash, redirect, render_template, request, session, url_for
+from flask import Flask, flash, redirect, render_template, request, session, url_for, send_file, Response
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 from icecream import ic
@@ -13,6 +21,8 @@ from icecream import ic
 from helpers import apology, login_required, lookup, usd
 from datetime import datetime
 import pytz
+import logging
+logging.basicConfig(level=logging.INFO)
 
 eastern_australia_tz = pytz.timezone('Australia/Sydney')
 current_time = datetime.now(eastern_australia_tz)
@@ -565,3 +575,102 @@ def results():
         result["images"] = [image["image_url"] for image in images]
 
     return render_template("results.html", results=results, username=session['username'])
+
+
+@app.route('/create_pdf', methods=['POST'])
+def create_pdf():
+     # Create the flowables list
+    flowables = []
+    # Fetch the data from the database
+    results = db.execute("""
+    SELECT results.*, images.image_url 
+    FROM results 
+    LEFT JOIN images ON results.id = images.result_id 
+    WHERE results.user_id = :user_id 
+    ORDER BY results.timestamp DESC 
+    LIMIT 10
+    """, 
+    user_id=session["user_id"]
+)
+
+    for result in results:
+        if result['image_url']:
+            # Print the image URL
+            print(f"Image URL: {result['image_url']}")
+            # Reduce the width of the image
+            #img = Image(result['image_url'], width=200)  # Reduced from 400 to 300
+           
+        else:
+            print(f"Warning: Empty image URL for result {result['id']}")
+            # Skip adding an image to the PDF
+    # Group results by result_id, each result will have a list of image_urls
+    grouped_results = {}
+    for result in results:
+        if result['id'] not in grouped_results:
+            grouped_results[result['id']] = result
+            grouped_results[result['id']]['image_urls'] = []
+        grouped_results[result['id']]['image_urls'].append(result['image_url'])
+
+    # Create a file-like buffer to receive PDF data
+    buffer = BytesIO()
+    # class MyPageTemplate(PageTemplate):
+    #     def afterDrawPage(self, canvas, doc):
+    #         # Draw horizontal rulers
+    #         for i in range(int(A4[0])):
+    #             if i % 50 == 0:
+    #                 canvas.drawString(i, A4[1] - 10, str(i))
+    # Create the PDF object, using the buffer as its "file"
+    doc = BaseDocTemplate(buffer, pagesize=A4)
+
+    # Create a Frame with a specified width and start position
+    frame = Frame(50, 50, A4[0]-100, A4[1]-100)  # Adjust the x, y, width, and height as needed
+
+
+    # Create a custom PageTemplate that uses the Frame
+    #template = MyPageTemplate(frames=[frame])
+    template = PageTemplate(frames=[frame])
+    # Add the custom PageTemplate to the BaseDocTemplate
+    doc.addPageTemplates([template])
+
+
+    # Create a Paragraph
+    styles = getSampleStyleSheet()
+
+    print(grouped_results)
+
+    # Add the flowables for each result
+    for result_id, result in grouped_results.items():
+        text = f"Result ID: {result_id}, Asset: {result['asset']}, Fault ID: {result['fault_id']}, Fault: {result['fault']}, Remedy: {result['remedy']}, Comment: {result['comment']}"
+        print(text)
+        paragraph = Paragraph(text, styles['Normal'])
+        flowables.append(paragraph)
+        flowables.append(Spacer(1, 20))
+
+        # Add images for each result
+        for image_url in result['image_urls']:
+            # Open the image with PIL to get its size
+            pil_image = PilImage.open(requests.get(image_url, stream=True).raw)
+            original_width, original_height = pil_image.size
+
+            # Calculate the new height based on the aspect ratio
+            new_width = 250
+            new_height = (new_width / original_width) * original_height
+
+            # Create the Image object with the new width and height
+            image = Image(image_url, width=new_width, height=new_height)
+
+            # Add the image to the flowables list
+            flowables.append(image)
+            flowables.append(Spacer(1, 20))
+
+    # Build the PDF
+    doc.build(flowables)
+
+    # Make the buffer's current position at 0
+    buffer.seek(0)
+
+    # Create a response
+    response = Response(buffer, mimetype='application/pdf')
+    response.headers.set('Content-Disposition', 'attachment', filename='report.pdf')
+
+    return response

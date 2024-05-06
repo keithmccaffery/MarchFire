@@ -72,3 +72,9 @@ nav .navbar-brand .green
     width: 100%;
     height: auto; /* maintain aspect ratio */
 }
+
+@media (min-width: 600px) {
+    .image-container img {
+        width: 90%; /* smaller width on large screens */
+    }
+}
