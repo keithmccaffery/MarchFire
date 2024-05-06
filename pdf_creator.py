@@ -1,7 +1,9 @@
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
-
+from reportlab.pdfgen import canvas
+c = canvas.Canvas("my_paragraph.pdf", pagesize=letter)
+width, height = letter
 doc = SimpleDocTemplate("my_paragraph.pdf", pagesize=letter)
 styles = getSampleStyleSheet()
 flowables = []

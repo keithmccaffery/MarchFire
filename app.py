@@ -647,7 +647,9 @@ def create_pdf():
         flowables.append(Spacer(1, 20))
 
         # Add images for each result
-        for image_url in result['image_urls']:
+        for image_url in result.get('image_urls', []):
+            if not image_url:  # Skip if the URL is empty
+                continue
             # Open the image with PIL to get its size
             pil_image = PilImage.open(requests.get(image_url, stream=True).raw)
             original_width, original_height = pil_image.size
@@ -658,8 +660,6 @@ def create_pdf():
 
             # Create the Image object with the new width and height
             image = Image(image_url, width=new_width, height=new_height)
-
-            # Add the image to the flowables list
             flowables.append(image)
             flowables.append(Spacer(1, 20))
 
