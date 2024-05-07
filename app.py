@@ -11,6 +11,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from io import BytesIO
 import json
+#from mssql import MSSQL
 
 from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, url_for, send_file, Response
@@ -28,6 +29,11 @@ eastern_australia_tz = pytz.timezone('Australia/Sydney')
 current_time = datetime.now(eastern_australia_tz)
 # Configure application
 app = Flask(__name__)
+
+#from mssql import MSSQL
+
+# Configure MSSQL
+#mssql = MSSQL(host='fireins.database.windows.net', user='keith', password='mandy99!', database='final')
 
 db = SQL("sqlite:///final.db")
 RESULTS = {}
@@ -83,17 +89,21 @@ def register():
         if not request.form.get("username"):
             return apology("must provide username", 400)
 
-        # Ensure password was submitted
-        elif not request.form.get("password"):
-            return apology("must provide password", 400)
+       # Ensure username was submitted
+        if not request.form.get("username"):
+            return apology("must provide username", 400)
 
-        # Ensure password confirmation was submitted
-        elif not request.form.get("confirmation"):
-            return apology("must confirm password", 400)
+        # # Ensure password was submitted
+        # elif not request.form.get("password"):
+        #     return apology("must provide password", 400)
 
-        # Ensure password and confirmation match
-        elif request.form.get("password") != request.form.get("confirmation"):
-            return apology("must confirm password", 400)
+        # # Ensure password confirmation was submitted
+        # elif not request.form.get("confirmation"):
+        #     return apology("must confirm password", 400)
+
+        # # Ensure password and confirmation match
+        # elif request.form.get("password") != request.form.get("confirmation"):
+        #     return apology("must confirm password", 400)
 
         # Query database for username
         rows = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
@@ -102,11 +112,8 @@ def register():
         if len(rows) != 0:
             return apology("username already exists", 400)
 
-
         # Insert new user into database
-        db.execute("INSERT INTO users (username, hash) VALUES(?, ?)",
-           request.form.get("username"), request.form.get("password"))
-
+        db.execute("INSERT INTO users (username) VALUES(?)", request.form.get("username"))
         # Query database for newly inserted user
         rows = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
 
@@ -135,15 +142,15 @@ def login():
             return apology("must provide username", 403)
 
         # Ensure password was submitted
-        elif not request.form.get("password"):
-            return apology("must provide password", 403)
+        #elif not request.form.get("password"):
+        #    return apology("must provide password", 403)
 
         # Query database for username
         rows = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
 
         # Ensure username exists and password is correct
-        if len(rows) != 1 or rows[0]["hash"] != request.form.get("password"):
-            return apology("invalid username and/or password", 403)
+        if len(rows) != 1: #or rows[0]["hash"] != request.form.get("password"):
+            return apology("invalid username ", 403)
 
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]

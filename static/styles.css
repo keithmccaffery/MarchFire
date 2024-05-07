@@ -65,6 +65,7 @@ nav .navbar-brand .green
 .image-container {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
+    grid-auto-rows: min-content; /* add this line */
     gap: 10px; /* adjust this value to add space between images */
 }
 
