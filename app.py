@@ -102,9 +102,10 @@ def register():
         if len(rows) != 0:
             return apology("username already exists", 400)
 
-        #Insert new user into database
+
+        # Insert new user into database
         db.execute("INSERT INTO users (username, hash) VALUES(?, ?)",
-                   request.form.get("username"), generate_password_hash(request.form.get("password")))
+           request.form.get("username"), request.form.get("password"))
 
         # Query database for newly inserted user
         rows = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
@@ -141,7 +142,7 @@ def login():
         rows = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
 
         # Ensure username exists and password is correct
-        if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
+        if len(rows) != 1 or rows[0]["hash"] != request.form.get("password"):
             return apology("invalid username and/or password", 403)
 
         # Remember which user has logged in
