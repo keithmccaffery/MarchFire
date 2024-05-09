@@ -14,7 +14,7 @@ import json
 #from mssql import MSSQL
 
 from cs50 import SQL
-from flask import Flask, flash, redirect, render_template, request, session, url_for, send_file, Response
+from flask import Flask, flash, redirect, render_template, request, session, url_for, send_file, Response, jsonify
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 from icecream import ic
@@ -646,12 +646,14 @@ def create_pdf():
 
     print(grouped_results)
 
-    # Add the flowables for each result
+# Add the flowables for each result
     for result_id, result in grouped_results.items():
-        text = f"Result ID: {result_id}, Asset: {result['asset']}, Fault ID: {result['fault_id']}, Fault: {result['fault']}, Remedy: {result['remedy']}, Comment: {result['comment']}"
-        print(text)
-        paragraph = Paragraph(text, styles['Normal'])
-        flowables.append(paragraph)
+        keys = ['asset', 'fault_id', 'fault', 'remedy', 'comment']
+        for key in keys:
+            text = f"{key.capitalize()}: {result[key]}"
+            print(text)
+            paragraph = Paragraph(text, styles['Normal'])
+            flowables.append(paragraph)
         flowables.append(Spacer(1, 20))
 
         # Add images for each result
@@ -682,3 +684,8 @@ def create_pdf():
     response.headers.set('Content-Disposition', 'attachment', filename='report.pdf')
 
     return response
+
+@app.route("/debug/users", methods=["GET"])
+def debug_users():
+    rows = db.execute("SELECT username FROM users")
+    return jsonify(rows)
