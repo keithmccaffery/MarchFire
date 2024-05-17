@@ -11,7 +11,10 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from io import BytesIO
 import json
-#from mssql import MSSQL
+import pyodbc
+from azure.identity import DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
+from MsSql import MsSql
 
 from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, url_for, send_file, Response, jsonify
@@ -30,7 +33,7 @@ current_time = datetime.now(eastern_australia_tz)
 # Configure application
 app = Flask(__name__)
 
-#from mssql import MSSQL
+
 
 # Configure MSSQL
 #mssql = MSSQL(host='fireins.database.windows.net', user='keith', password='mandy99!', database='final')
@@ -76,6 +79,7 @@ def index():
 # and to still be able to register other building that are saved to the same database.
 
 
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     """Register user"""
@@ -89,21 +93,17 @@ def register():
         if not request.form.get("username"):
             return apology("must provide username", 400)
 
-       # Ensure username was submitted
-        if not request.form.get("username"):
-            return apology("must provide username", 400)
+        # Ensure password was submitted
+        elif not request.form.get("password"):
+            return apology("must provide password", 400)
 
-        # # Ensure password was submitted
-        # elif not request.form.get("password"):
-        #     return apology("must provide password", 400)
+        # Ensure password confirmation was submitted
+        elif not request.form.get("confirmation"):
+            return apology("must confirm password", 400)
 
-        # # Ensure password confirmation was submitted
-        # elif not request.form.get("confirmation"):
-        #     return apology("must confirm password", 400)
-
-        # # Ensure password and confirmation match
-        # elif request.form.get("password") != request.form.get("confirmation"):
-        #     return apology("must confirm password", 400)
+        # Ensure password and confirmation match
+        elif request.form.get("password") != request.form.get("confirmation"):
+            return apology("passwords do not match", 400)
 
         # Query database for username
         rows = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
@@ -112,8 +112,12 @@ def register():
         if len(rows) != 0:
             return apology("username already exists", 400)
 
+        # Generate hashed password
+        hashed_password = generate_password_hash(request.form.get("password"))
+
         # Insert new user into database
-        db.execute("INSERT INTO users (username) VALUES(?)", request.form.get("username"))
+        db.execute("INSERT INTO users (username, hash) VALUES(?, ?)", request.form.get("username"), hashed_password)
+
         # Query database for newly inserted user
         rows = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
 
@@ -142,14 +146,14 @@ def login():
             return apology("must provide username", 403)
 
         # Ensure password was submitted
-        #elif not request.form.get("password"):
-        #    return apology("must provide password", 403)
+        elif not request.form.get("password"):
+            return apology("must provide password", 403)
 
         # Query database for username
         rows = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
 
         # Ensure username exists and password is correct
-        if len(rows) != 1: #or rows[0]["hash"] != request.form.get("password"):
+        if len(rows) != 1 or not rows[0]["hash"] != request.form.get("password"):
             return apology("invalid username ", 403)
 
         # Remember which user has logged in
