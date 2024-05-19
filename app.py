@@ -25,25 +25,42 @@ from icecream import ic
 from helpers import apology, login_required, lookup, usd
 from datetime import datetime
 import pytz
+import urllib.parse
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 import logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.ERROR)
 
 eastern_australia_tz = pytz.timezone('Australia/Sydney')
 current_time = datetime.now(eastern_australia_tz)
 # Configure application
 app = Flask(__name__)
 
+# Set up Azure Key Vault client
+#keyVaultName = "Coogee"
+#KVUri = f"https://{keyVaultName}.vault.azure.net"
 
+credential = DefaultAzureCredential()
+client = SecretClient(vault_url="https://Coogee.vault.azure.net/", credential=credential)
+#client = SecretClient(vault_url=KVUri, credential=credential)
+
+# Retrieve connection string from Key Vault
+odbc_conn_str = client.get_secret("DbConnectionString").value
+
+# Convert to SQLAlchemy format
+sqlalchemy_conn_str = urllib.parse.quote_plus(odbc_conn_str)
+sqlalchemy_conn_str = "mssql+pyodbc:///?odbc_connect={}".format(sqlalchemy_conn_str)
 
 # Configure MSSQL
-#mssql = MSSQL(host='fireins.database.windows.net', user='keith', password='mandy99!', database='final')
-
-db = SQL("sqlite:///final.db")
+engine = create_engine(sqlalchemy_conn_str)
+# Configure MSSQL
+#db = SQL(connection_string)
 RESULTS = {}
 
-DOOR_FAULTS = db.execute("SELECT * FROM doorfixes")
-LIGHT_FAULTS = db.execute("SELECT * FROM em_lightfixes")
-FIREEX_FAULTS = db.execute("SELECT * FROM fireExfixes")
+with engine.connect() as conn:
+    DOOR_FAULTS = conn.execute("SELECT * FROM doorfixes")
+    LIGHT_FAULTS = conn.execute("SELECT * FROM em_lightfixes")
+    FIREEX_FAULTS = conn.execute("SELECT * FROM fireExfixes")
 # Custom filter
 # app.jinja_env.filters["usd"] = usd
 
@@ -54,7 +71,7 @@ Session(app)
 
 # Configure CS50 Library to use SQLite database
 # Need to set up some other databases for the assests and the results of the inspections
-db = SQL("sqlite:///final.db")
+#db = SQL("sqlite:///final.db")
 
 
 
@@ -106,7 +123,9 @@ def register():
             return apology("passwords do not match", 400)
 
         # Query database for username
-        rows = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
+        with engine.connect() as conn:
+            result_proxy = conn.execute("SELECT * FROM users WHERE username = :username", username=request.form.get("username"))
+        rows = result_proxy.fetchall
 
         # Ensure username does not already exist
         if len(rows) != 0:
@@ -116,10 +135,13 @@ def register():
         hashed_password = generate_password_hash(request.form.get("password"))
 
         # Insert new user into database
-        db.execute("INSERT INTO users (username, hash) VALUES(?, ?)", request.form.get("username"), hashed_password)
+        with engine.connect() as conn:
+            conn.execute("INSERT INTO users (username, hash) VALUES(?, ?)", request.form.get("username"), hashed_password)
 
         # Query database for newly inserted user
-        rows = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
+        with engine.connect() as conn:
+            result_proxy = conn.execute("SELECT * FROM users WHERE username = :username", username=request.form.get("username"))
+        rows = result_proxy.fetchall()
 
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
@@ -150,11 +172,13 @@ def login():
             return apology("must provide password", 403)
 
         # Query database for username
-        rows = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
+        with engine.connect() as conn:
+            result_proxy = conn.execute("SELECT * FROM users WHERE username = :username", username=request.form.get("username"))
+        rows = result_proxy.fetchall()
 
         # Ensure username exists and password is correct
-        if len(rows) != 1 or not rows[0]["hash"] != request.form.get("password"):
-            return apology("invalid username ", 403)
+        if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
+            return apology("invalid username and/or password", 403)
 
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
@@ -217,24 +241,19 @@ def doors():
         remedyDict = ()
         remedyStr = {}
 
-        # This is working as expected but I have kept the ic views which helped to solve the problem of getting
-        # the strings for the faults and the remedies out of the selection results.
-        fault=db.execute("SELECT fault FROM doorfixes WHERE fault_id = :door_fault",
-                    door_fault=door_fault)
-        remedy=db.execute("SELECT remedy FROM doorfixes WHERE fault_id = :door_fault",
-                    door_fault=door_fault)
-        ic(remedy)
-        faultDict   = fault [0]
-        faultStr = faultDict  ['fault']
+         # Fetch the fault and remedy
+        with engine.connect() as conn:
+            result_proxy = conn.execute("SELECT fault FROM doorfixes WHERE fault_id = :door_fault", door_fault=door_fault)
+            faultDict = dict(result_proxy.fetchone())
+            faultStr = faultDict['fault']
 
-        remedyDict = remedy [0]
-        remedyStr= remedyDict  ['remedy']
+            result_proxy = conn.execute("SELECT remedy FROM doorfixes WHERE fault_id = :door_fault", door_fault=door_fault)
+            remedyDict = dict(result_proxy.fetchone())
+            remedyStr = remedyDict['remedy']
 
-        # The strings were saved into these variables to build the results table below. I have left some of the
-        # "debugging tools" that I used to see what was being passed around.
+        # The strings were saved into these variables to build the results table below.
         remedy = remedyStr
         fault = faultStr
-
 
         print(fault)
         print(remedy)
@@ -247,11 +266,15 @@ def doors():
         from datetime import datetime
 
         # Insert a row into the results table
-        db.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)",
+        with engine.connect() as conn:
+            conn.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)",
                 user_id=session["user_id"], asset=asset, fault_id=door_fault, fault=fault, remedy=remedy, comment=comment, timestamp=datetime.now(eastern_australia_tz))
 
-        # Get the ID of the last inserted row
-        result_id = db.execute("SELECT last_insert_rowid()")[0]["last_insert_rowid()"]
+         # Get the ID of the last inserted row
+        with engine.connect() as conn:
+            result_proxy = conn.execute("SELECT last_insert_rowid()")
+            result_id = result_proxy.fetchone()["last_insert_rowid()"]
+       
 
         # Get the imageUrl string from the form and split it into a list of URLs
         image_urls = request.form.get("imageUrl").split(';')
@@ -263,7 +286,8 @@ def doors():
             print(f"image_url: {image_url}")  # Log the value of image_url
             try:
                 print("Inside the try block")  # Log a message
-                db.execute("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)",
+                with engine.connect() as conn:
+                    conn.execute("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)",
                         result_id=result_id, image_url=image_url)
             except Exception as e:
                 print(f"An error occurred while inserting into the images table: {e}")
@@ -306,25 +330,19 @@ def em_lights():
         remedyDict = ()
         remedyStr = {}
 
-        # This is working as expected but I have kept the ic views which helped to solve the problem of getting
-        # the strings for the faults and the remedies out of the selection results.
-        fault=db.execute("SELECT fault FROM em_lightfixes WHERE fault_id = :light_fault",
-                    light_fault=light_fault)
-        remedy=db.execute("SELECT remedy FROM em_lightfixes WHERE fault_id = :light_fault",
-                    light_fault=light_fault)
-        ic(remedy)
-        faultDict   = fault [0]
-        #print(faultDict)
-        faultStr = faultDict  ['fault']
+        # Fetch the fault and remedy
+        with engine.connect() as conn:
+            result_proxy = conn.execute("SELECT fault FROM em_lightfixes WHERE fault_id = :light_fault", light_fault=light_fault)
+            faultDict = dict(result_proxy.fetchone())
+            faultStr = faultDict['fault']
 
-        remedyDict = remedy [0]
-        remedyStr= remedyDict  ['remedy']
+            result_proxy = conn.execute("SELECT remedy FROM em_lightfixes WHERE fault_id = :light_fault", light_fault=light_fault)
+            remedyDict = dict(result_proxy.fetchone())
+            remedyStr = remedyDict['remedy']
 
-        # The strings were saved into these variables to build the results table below. I have left some of the
-        # "debugging tools" that I used to see what was being passed around.
+        # The strings were saved into these variables to build the results table below.
         remedy = remedyStr
         fault = faultStr
-
 
         print(fault)
         print(remedy)
@@ -337,14 +355,16 @@ def em_lights():
         from datetime import datetime
 
         # Insert a row into the results table
-        db.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)",
+        with engine.connect() as conn:
+            conn.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)",
                 user_id=session["user_id"], asset=asset, fault_id=light_fault, fault=fault, remedy=remedy, comment=comment, timestamp=datetime.now(eastern_australia_tz))
 
-        # Get the ID of the last inserted row
-        result_id = db.execute("SELECT last_insert_rowid()")[0]["last_insert_rowid()"]
+            # Get the ID of the last inserted row
+            result_proxy = conn.execute("SELECT last_insert_rowid()")
+            result_id = result_proxy.fetchone()["last_insert_rowid()"]
 
         # Get the imageUrl string from the form and split it into a list of URLs
-        image_urls = request.form.get("imageUrl").split(';')
+        image_urls = request.form.get("imageUrl").split(';') 
 
         print(f"result_id: {result_id}")  # Log the value of result_id
         print(f"image_urls: {image_urls}")  # Log the value of image_urls
@@ -353,15 +373,18 @@ def em_lights():
             print(f"image_url: {image_url}")  # Log the value of image_url
             try:
                 print("Inside the try block")  # Log a message
-                db.execute("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)",
+                with engine.connect() as conn:
+                    conn.execute("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)",
                         result_id=result_id, image_url=image_url)
             except Exception as e:
                 print(f"An error occurred while inserting into the images table: {e}")
 
         return redirect("/results")
-        
-    else:
+            
+    # The else statement has been removed as it was not associated with an if statement
+    else:    
         return render_template("em_lights.html",  light_faults=LIGHT_FAULTS)
+
 
 
 # These following functions could be completed as per the doors method above, however, since hearing about OOP
@@ -399,22 +422,19 @@ def fire_ext():
 
         # This is working as expected but I have kept the ic views which helped to solve the problem of getting
         # the strings for the faults and the remedies out of the selection results.
-        fault=db.execute("SELECT fault FROM fireEXfixes WHERE fault_id = :fireEx_fault",
-                    fireEx_fault=fireEx_fault)
-        remedy=db.execute("SELECT remedy FROM fireEXfixes WHERE fault_id = :fireEx_fault",
-                    fireEx_fault=fireEx_fault)
-        ic(remedy)
-        faultDict   = fault [0]
-        faultStr = faultDict  ['fault']
+        # Fetch the fault and remedy
+        with engine.connect() as conn:
+            result_proxy = conn.execute("SELECT fault FROM fireEXfixes WHERE fault_id = :fireEx_fault", fireEx_fault=fireEx_fault)
+            faultDict = dict(result_proxy.fetchone())
+            faultStr = faultDict['fault']
 
-        remedyDict = remedy [0]
-        remedyStr= remedyDict  ['remedy']
+            result_proxy = conn.execute("SELECT remedy FROM fireEXfixes WHERE fault_id = :fireEx_fault", fireEx_fault=fireEx_fault)
+            remedyDict = dict(result_proxy.fetchone())
+            remedyStr = remedyDict['remedy']
 
-        # The strings were saved into these variables to build the results table below. I have left some of the
-        # "debugging tools" that I used to see what was being passed around.
+        # The strings were saved into these variables to build the results table below.
         remedy = remedyStr
         fault = faultStr
-
 
         print(fault)
         print(remedy)
@@ -427,11 +447,13 @@ def fire_ext():
         from datetime import datetime
 
         # Insert a row into the results table
-        db.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)",
+        with engine.connect() as conn:
+            conn.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)",
                 user_id=session["user_id"], asset=asset, fault_id=fireEx_fault, fault=fault, remedy=remedy, comment=comment, timestamp=datetime.now(eastern_australia_tz))
 
-        # Get the ID of the last inserted row
-        result_id = db.execute("SELECT last_insert_rowid()")[0]["last_insert_rowid()"]
+            # Get the ID of the last inserted row
+            result_proxy = conn.execute("SELECT last_insert_rowid()")
+            result_id = result_proxy.fetchone()["last_insert_rowid()"]
 
         # Get the imageUrl string from the form and split it into a list of URLs
         image_urls = request.form.get("imageUrl").split(';')
@@ -443,7 +465,8 @@ def fire_ext():
             print(f"image_url: {image_url}")  # Log the value of image_url
             try:
                 print("Inside the try block")  # Log a message
-                db.execute("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)",
+                with engine.connect() as conn:
+                    conn.execute("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)",
                         result_id=result_id, image_url=image_url)
             except Exception as e:
                 print(f"An error occurred while inserting into the images table: {e}")
@@ -484,9 +507,9 @@ def other():
 
         # This is working as expected but I have kept the ic views which helped to solve the problem of getting
         # the strings for the faults and the remedies out of the selection results.
-        # fault=db.execute("SELECT fault FROM doorfixes WHERE fault_id = :door_fault",
+        # fault=conn.execute("SELECT fault FROM doorfixes WHERE fault_id = :door_fault",
         #             door_fault=door_fault)
-        # remedy=db.execute("SELECT remedy FROM doorfixes WHERE fault_id = :door_fault",
+        # remedy=conn.execute("SELECT remedy FROM doorfixes WHERE fault_id = :door_fault",
         #             door_fault=door_fault)
         # ic(remedy)
         # faultDict   = fault [0]
@@ -512,11 +535,13 @@ def other():
         from datetime import datetime
 
         # Insert a row into the results table
-        db.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)",
+        with engine.connect() as conn:
+            conn.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)",
                 user_id=session["user_id"], asset=asset, fault_id=0, fault=fault, remedy=remedy, comment=comment, timestamp=datetime.now(eastern_australia_tz))
 
-        # Get the ID of the last inserted row
-        result_id = db.execute("SELECT last_insert_rowid()")[0]["last_insert_rowid()"]
+            # Get the ID of the last inserted row
+            result_proxy = conn.execute("SELECT last_insert_rowid()")
+            result_id = result_proxy.fetchone()["last_insert_rowid()"]
 
         # Get the imageUrl string from the form and split it into a list of URLs
         image_urls = request.form.get("imageUrl").split(';')
@@ -528,7 +553,8 @@ def other():
             print(f"image_url: {image_url}")  # Log the value of image_url
             try:
                 print("Inside the try block")  # Log a message
-                db.execute("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)",
+                with engine.connect() as conn:
+                    conn.execute("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)",
                         result_id=result_id, image_url=image_url)
             except Exception as e:
                 print(f"An error occurred while inserting into the images table: {e}")
@@ -545,17 +571,19 @@ def other():
 def report():
     """Show report of results for the building"""
     # Query database for user's results, ordered by the most recent first. Maybe need to put a time cut off when printing this report.
-    results = db.execute(
-        """
-        SELECT results.*, images.image_url 
-        FROM results 
-        LEFT JOIN images ON results.id = images.result_id 
-        WHERE results.user_id = :user_id 
-        ORDER BY results.timestamp DESC 
-        LIMIT 10
-        """, 
-        user_id=session["user_id"]
-    )
+    with engine.connect() as conn:
+        result_proxy = conn.execute(
+            """
+            SELECT results.*, images.image_url 
+            FROM results 
+            LEFT JOIN images ON results.id = images.result_id 
+            WHERE results.user_id = :user_id 
+            ORDER BY results.timestamp DESC 
+            LIMIT 10
+            """, 
+            user_id=session["user_id"]
+        )
+        results = [dict(row) for row in result_proxy.fetchall()]
 
     # Group results by result_id, each result will have a list of image_urls
     grouped_results = {}
@@ -575,35 +603,41 @@ def results():
     if 'username' not in session:
         # If not, redirect to the login page
         return redirect(url_for('login'))
-    results = db.execute(
-        "SELECT * FROM results WHERE user_id = :user_id ORDER BY timestamp DESC", user_id=session["user_id"]
-    )
+    
+    with engine.connect() as conn:
+        result_proxy = conn.execute(
+            "SELECT * FROM results WHERE user_id = :user_id ORDER BY timestamp DESC", user_id=session["user_id"]
+        )
+        results = [dict(row) for row in result_proxy.fetchall()]
 
     # Get the image URLs for each result
     for result in results:
-        images = db.execute(
-            "SELECT image_url FROM images WHERE result_id = :result_id", result_id=result["id"]
-        )
+        with engine.connect() as conn:
+            result_proxy = conn.execute(
+                "SELECT image_url FROM images WHERE result_id = :result_id", result_id=result["id"]
+            )
+            images = [dict(row) for row in result_proxy.fetchall()]
         result["images"] = [image["image_url"] for image in images]
 
     return render_template("results.html", results=results, username=session['username'])
-
 
 @app.route('/create_pdf', methods=['POST'])
 def create_pdf():
      # Create the flowables list
     flowables = []
     # Fetch the data from the database
-    results = db.execute("""
-    SELECT results.*, images.image_url 
-    FROM results 
-    LEFT JOIN images ON results.id = images.result_id 
-    WHERE results.user_id = :user_id 
-    ORDER BY results.timestamp DESC 
-    LIMIT 10
-    """, 
-    user_id=session["user_id"]
-)
+    with engine.connect() as conn:
+        result_proxy = conn.execute("""
+            SELECT results.*, images.image_url 
+            FROM results 
+            LEFT JOIN images ON results.id = images.result_id 
+            WHERE results.user_id = :user_id 
+            ORDER BY results.timestamp DESC 
+            LIMIT 10
+            """, 
+            user_id=session["user_id"]
+        )
+        results = [dict(row) for row in result_proxy.fetchall()]
 
     for result in results:
         if result['image_url']:
@@ -691,5 +725,7 @@ def create_pdf():
 
 @app.route("/debug/users", methods=["GET"])
 def debug_users():
-    rows = db.execute("SELECT username FROM users")
+    with engine.connect() as conn:
+        result_proxy = conn.execute("SELECT username FROM users")
+        rows = [row["username"] for row in result_proxy.fetchall()]
     return jsonify(rows)

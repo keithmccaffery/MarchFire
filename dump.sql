@@ -1,8 +1,4 @@
-IF NOT EXISTS (SELECT 1 FROM sys.sql_logins WHERE name = 'keithmc')
-    CREATE LOGIN keithmc WITH PASSWORD = 'mandy99!'; -- Replace 'password' with the actual password
 
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'keithmc')
-    CREATE USER keithmc FOR LOGIN keithmc;
 
 
 BEGIN
@@ -14,10 +10,7 @@ BEGIN
     );
 END
 
-CREATE ROLE doorfixes_role;
-GRANT INSERT ON doorfixes TO doorfixes_role;
 
-EXEC sp_addrolemember 'doorfixes_role', 'keithmc';
 
 -- Insert statements...
 INSERT INTO doorfixes VALUES('1','Inspect to determine if the fire-resistant doorset has been modified since the previous routine service','Door has been modified since previous routine service','Reinstate the door to previous as required');
@@ -61,10 +54,7 @@ BEGIN
     );
 END
 
-CREATE ROLE em_lightfixes_role;
-GRANT INSERT ON em_lightfixes TO em_lightfixes_role;
 
-EXEC sp_addrolemember 'em_lightfixes_role', 'keithmc';
 
 -- Insert statements...
 INSERT INTO em_lightfixes VALUES(0,'Light sound but want to record status and image','No fault','No remedy');
@@ -83,9 +73,7 @@ BEGIN
     );
 END
 
-CREATE ROLE fireExfixes_role;
-GRANT INSERT ON fireExfixes TO fireExfixes_role;
-EXEC sp_addrolemember 'fireExfixes_role', 'keithmc';
+
 
 -- Insert statements...
 INSERT INTO fireExfixes VALUES(0,'Fire extinguisher sound but want record status and image','No fault','No action required');
@@ -116,15 +104,13 @@ BEGIN
     );
 END
 
-CREATE ROLE results_role;
-GRANT INSERT ON results TO results_role;
-EXEC sp_addrolemember 'results_role', 'keithmc';
+
 
 -- Insert statements...
 
 BEGIN
     CREATE TABLE images (
-        id INT IDENTITY(1,1) PRIMARY KEY,
+        id INT IDENTITY(56,1) PRIMARY KEY,
         result_id INT,
         image_url NVARCHAR(MAX),
         remedy NVARCHAR(MAX),
@@ -132,66 +118,11 @@ BEGIN
     );
 END
 
-CREATE ROLE images_role;
-GRANT INSERT ON images TO images_role;
-EXEC sp_addrolemember 'images_role', 'keithmc';
+
 
 -- Insert statements...
-INSERT INTO images VALUES(1,136,'https://firstfire.blob.core.windows.net/firedoors1/image_1713689967582.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(2,137,'https://firstfire.blob.core.windows.net/firedoors1/image_1713691946153.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(3,138,'https://firstfire.blob.core.windows.net/firedoors1/image_1713694326941.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(4,139,'https://firstfire.blob.core.windows.net/firedoors1/image_1713694717283.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(5,163,'https://firstfire.blob.core.windows.net/firedoors1/image_1714017268429.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https');
-INSERT INTO images VALUES(6,163,'http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(7,163,'https://firstfire.blob.core.windows.net/firedoors1/image_1714017295804.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https');
-INSERT INTO images VALUES(8,163,'http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(9,164,'https://firstfire.blob.core.windows.net/firedoors1/image_1714018264761.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(10,165,'https://firstfire.blob.core.windows.net/firedoors1/image_1714018502393.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(11,165,'https://firstfire.blob.core.windows.net/firedoors1/image_1714018523671.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(12,166,'https://firstfire.blob.core.windows.net/firedoors1/image_1714043921783.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(13,166,'https://firstfire.blob.core.windows.net/firedoors1/image_1714043928448.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(14,167,'https://firstfire.blob.core.windows.net/firedoors1/image_1714045071655.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(15,168,'https://firstfire.blob.core.windows.net/firedoors1/image_1714045752656.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(16,168,'https://firstfire.blob.core.windows.net/firedoors1/image_1714045760793.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(17,168,'https://firstfire.blob.core.windows.net/firedoors1/image_1714045769797.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(18,169,'https://firstfire.blob.core.windows.net/firedoors1/image_1714046578354.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(19,169,'https://firstfire.blob.core.windows.net/firedoors1/image_1714046588649.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(20,169,'https://firstfire.blob.core.windows.net/firedoors1/image_1714046597614.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(21,170,'https://firstfire.blob.core.windows.net/firedoors1/image_1714131818865.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(22,170,'https://firstfire.blob.core.windows.net/firedoors1/image_1714131831082.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(23,171,'https://firstfire.blob.core.windows.net/firedoors1/image_1714213632628.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(24,171,'https://firstfire.blob.core.windows.net/firedoors1/image_1714213642348.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(25,172,'https://firstfire.blob.core.windows.net/firedoors1/image_1714214062989.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(26,172,'https://firstfire.blob.core.windows.net/firedoors1/image_1714214071687.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(27,173,'https://firstfire.blob.core.windows.net/firedoors1/image_1714214146331.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(28,173,'https://firstfire.blob.core.windows.net/firedoors1/image_1714214154201.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(29,174,'https://firstfire.blob.core.windows.net/firedoors1/image_1714214225270.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(30,174,'https://firstfire.blob.core.windows.net/firedoors1/image_1714214236129.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(31,175,'https://firstfire.blob.core.windows.net/firedoors1/image_1714216128330.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(32,175,'https://firstfire.blob.core.windows.net/firedoors1/image_1714216135245.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(33,176,'https://firstfire.blob.core.windows.net/firedoors1/image_1714257504082.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(34,176,'https://firstfire.blob.core.windows.net/firedoors1/image_1714257513761.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(35,177,'https://firstfire.blob.core.windows.net/firedoors1/image_1714257621552.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(36,177,'https://firstfire.blob.core.windows.net/firedoors1/image_1714257630587.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(37,178,'https://firstfire.blob.core.windows.net/firedoors1/image_1714258212761.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(38,178,'https://firstfire.blob.core.windows.net/firedoors1/image_1714258220198.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(39,179,'https://firstfire.blob.core.windows.net/firedoors1/image_1714259830143.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(40,179,'https://firstfire.blob.core.windows.net/firedoors1/image_1714259837778.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(41,180,'');
-INSERT INTO images VALUES(42,181,'https://firstfire.blob.core.windows.net/firedoors1/image_1714289385053.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(43,181,'https://firstfire.blob.core.windows.net/firedoors1/image_1714289395868.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(44,182,'');
-INSERT INTO images VALUES(45,183,'');
-INSERT INTO images VALUES(46,184,'');
-INSERT INTO images VALUES(47,185,'');
-INSERT INTO images VALUES(48,186,'');
-INSERT INTO images VALUES(49,187,'');
-INSERT INTO images VALUES(50,188,'');
-INSERT INTO images VALUES(51,189,'https://firstfire.blob.core.windows.net/firedoors1/image_1714475257095.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(52,189,'https://firstfire.blob.core.windows.net/firedoors1/image_1714475272757.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(53,190,'https://firstfire.blob.core.windows.net/firedoors1/image_1714477802458.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(54,190,'https://firstfire.blob.core.windows.net/firedoors1/image_1714477827273.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(55,191,'');
+
+
 INSERT INTO images VALUES(56,192,'https://firstfire.blob.core.windows.net/firedoors1/image_1714561785692.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
 INSERT INTO images VALUES(57,193,'https://firstfire.blob.core.windows.net/firedoors1/image_1714562290589.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
 INSERT INTO images VALUES(58,193,'https://firstfire.blob.core.windows.net/firedoors1/image_1714562310192.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
@@ -215,52 +146,23 @@ INSERT INTO images VALUES(75,203,'https://firstfire.blob.core.windows.net/firedo
 INSERT INTO images VALUES(76,204,'https://firstfire.blob.core.windows.net/firedoors1/image_1715081584563.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
 INSERT INTO images VALUES(77,205,'https://firstfire.blob.core.windows.net/firedoors1/image_1715081703534.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
 INSERT INTO images VALUES(78,205,'https://firstfire.blob.core.windows.net/firedoors1/image_1715081714168.jpg?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2024-06-05T14:08:47Z&st=2024-02-11T05:08:47Z&spr=https,http&sig=RXTEYfSJv1wwz9P6%2BrSJln8scy%2B15cRb8LBFDgWYPCY%3D');
-INSERT INTO images VALUES(79,206,'');
+
 
 BEGIN
     CREATE TABLE users (
-        id INT IDENTITY(1,1) PRIMARY KEY,
+        id INT IDENTITY(25,1) PRIMARY KEY,
         username NVARCHAR(255) NOT NULL,
         hash NVARCHAR(255),
         UNIQUE(username)
     );
 END
 
-CREATE ROLE users_role;
-GRANT INSERT ON users TO users_role;
-EXEC sp_addrolemember 'users_role', 'keithmc';
+
 
 -- Insert statements...
-INSERT INTO users VALUES(1,'keith');
-INSERT INTO users VALUES(2,'Mandy');
-INSERT INTO users VALUES(3,'Me');
-INSERT INTO users VALUES(4,'My');
-INSERT INTO users VALUES(5,'marty');
-INSERT INTO users VALUES(6,'Kevin');
-INSERT INTO users VALUES(7,'Panorama');
-INSERT INTO users VALUES(8,'Gleneagles');
-INSERT INTO users VALUES(9,'Todman');
-INSERT INTO users VALUES(10,'Coogee');
-INSERT INTO users VALUES(11,'Goulburn0424');
-INSERT INTO users VALUES(12,'Goulburn0425');
-INSERT INTO users VALUES(13,'mount');
-INSERT INTO users VALUES(14,'cook');
-INSERT INTO users VALUES(15,'cook1');
-INSERT INTO users VALUES(16,'One');
-INSERT INTO users VALUES(17,'Two');
-INSERT INTO users VALUES(18,'Three');
-INSERT INTO users VALUES(19,'Four');
-INSERT INTO users VALUES(20,'Five');
-INSERT INTO users VALUES(21,'Six');
-INSERT INTO users VALUES(22,'Sunday');
-INSERT INTO users VALUES(23,'Sun2');
-INSERT INTO users VALUES(24,'Sun3');
+
 INSERT INTO users VALUES(25,'Tues1');
 INSERT INTO users VALUES(26,'Tues2');
 INSERT INTO users VALUES(27,'Td8');
 INSERT INTO users VALUES(28,'Td9');
-DELETE FROM sqlite_sequence;
-INSERT INTO sqlite_sequence VALUES('transactions',58);
-INSERT INTO sqlite_sequence VALUES('fireExfixes',13);
-INSERT INTO sqlite_sequence VALUES('results',206);
-COMMIT;
+
