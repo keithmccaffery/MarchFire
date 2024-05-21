@@ -555,8 +555,10 @@ def other():
         for image_url in image_urls:
             try:
                 session = SqlAlchemySession(bind=engine)
-                session.execute("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)",
-                                {"result_id": result_id, "image_url": image_url})
+                session.execute(
+                    text("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)"),
+                    {"result_id": result_id, "image_url": image_url}
+                )
                 session.commit()
             except Exception as e:
                 session.rollback()
@@ -564,7 +566,7 @@ def other():
                 return apology("image logging failed", 500)
             finally:
                 session.close()
-
+        print("Redirecting to /results")  # Print a message before the redirect
         return redirect("/results")
         
     else:
@@ -599,31 +601,40 @@ def report():
 
     # Render history page with defects
     return render_template("report.html", results=grouped_results.values(), username=session['username'])
-
-@app.route("/results")
+@app.route('/results')
 @login_required
 def results():
-    # Check if 'username' is in the session
-    if 'username' not in session:
+    # Check if 'username' is in the flask_session
+    if 'username' not in flask_session:
         # If not, redirect to the login page
         return redirect(url_for('login'))
     
-    with engine.connect() as conn:
-        result_proxy = conn.execute(
-            "SELECT * FROM results WHERE user_id = :user_id ORDER BY timestamp DESC", user_id=session["user_id"]
+    try:
+        session = SqlAlchemySession(bind=engine)
+        result_proxy = session.execute(
+            text("SELECT * FROM results WHERE user_id = :user_id ORDER BY timestamp DESC"),
+            {"user_id": flask_session["user_id"]}
         )
-        results = [dict(row) for row in result_proxy.fetchall()]
 
-    # Get the image URLs for each result
-    for result in results:
-        with engine.connect() as conn:
-            result_proxy = conn.execute(
-                "SELECT image_url FROM images WHERE result_id = :result_id", result_id=result["id"]
-            )
-            images = [dict(row) for row in result_proxy.fetchall()]
-        result["images"] = [image["image_url"] for image in images]
+        keys = result_proxy.keys()
+        print(f"Number of keys: {len(keys)}")  # Print the number of keys
 
-    return render_template("results.html", results=results, username=session['username'])
+        results = []
+        for row in result_proxy.fetchall():
+            print(f"Number of elements in row: {len(row)}")  # Print the number of elements in each row
+            results.append({column: value for column, value in zip(keys, row)})
+
+        print(f"Results: {results}")  # Print the results
+
+    except Exception as e:
+        print(f"Failed to execute query: {e}")
+        return apology("failed to retrieve results", 500)
+    finally:
+        session.close()
+
+    # Render history page with defects
+    return render_template("results.html", results=results, username=flask_session['username'])
+
 
 @app.route('/create_pdf', methods=['POST'])
 def create_pdf():
