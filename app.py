@@ -18,7 +18,8 @@ from MsSql import MsSql
 
 from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, url_for, send_file, Response, jsonify
-from flask_session import Session
+from flask import session as flask_session
+from flask_session import Session as FlaskSession
 from werkzeug.security import check_password_hash, generate_password_hash
 from icecream import ic
 
@@ -27,14 +28,18 @@ from datetime import datetime
 import pytz
 import urllib.parse
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session as SqlAlchemySession
+from sqlalchemy import text
 import logging
 logging.basicConfig(level=logging.ERROR)
 
 eastern_australia_tz = pytz.timezone('Australia/Sydney')
 current_time = datetime.now(eastern_australia_tz)
 # Configure application
+import os
+
 app = Flask(__name__)
+app.secret_key = 'mandy'
 
 # Set up Azure Key Vault client
 #keyVaultName = "Coogee"
@@ -57,17 +62,20 @@ engine = create_engine(sqlalchemy_conn_str)
 #db = SQL(connection_string)
 RESULTS = {}
 
-with engine.connect() as conn:
-    DOOR_FAULTS = conn.execute("SELECT * FROM doorfixes")
-    LIGHT_FAULTS = conn.execute("SELECT * FROM em_lightfixes")
-    FIREEX_FAULTS = conn.execute("SELECT * FROM fireExfixes")
+try:
+    with engine.connect() as conn:
+        DOOR_FAULTS = conn.execute(text("SELECT * FROM doorfixes")).fetchall()
+        LIGHT_FAULTS = conn.execute(text("SELECT * FROM em_lightfixes")).fetchall()
+        FIREEX_FAULTS = conn.execute(text("SELECT * FROM fireExfixes")).fetchall()
+except Exception as e:
+    print(f"Failed to connect to the database: {e}")
 # Custom filter
 # app.jinja_env.filters["usd"] = usd
 
 # Configure session to use filesystem (instead of signed cookies)
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
-Session(app)
+FlaskSession(app)
 
 # Configure CS50 Library to use SQLite database
 # Need to set up some other databases for the assests and the results of the inspections
@@ -123,9 +131,17 @@ def register():
             return apology("passwords do not match", 400)
 
         # Query database for username
-        with engine.connect() as conn:
-            result_proxy = conn.execute("SELECT * FROM users WHERE username = :username", username=request.form.get("username"))
-        rows = result_proxy.fetchall
+        try:
+            with engine.connect() as conn:
+                query = text("SELECT * FROM users WHERE username = :username")
+                result_proxy = conn.execute(query.params(username=request.form.get("username")))
+        except Exception as e:
+            print(f"Failed to execute query: {e}")
+
+        if result_proxy.rowcount > 0:
+            rows = result_proxy.fetchall()
+        else:
+            rows = []
 
         # Ensure username does not already exist
         if len(rows) != 0:
@@ -135,16 +151,34 @@ def register():
         hashed_password = generate_password_hash(request.form.get("password"))
 
         # Insert new user into database
-        with engine.connect() as conn:
-            conn.execute("INSERT INTO users (username, hash) VALUES(?, ?)", request.form.get("username"), hashed_password)
+        try:
+            with engine.begin() as conn:
+                query = text("INSERT INTO users (username, hash) VALUES(:username, :hashed_password)")
+                conn.execute(query.params(username=request.form.get("username"), hashed_password=hashed_password))
+        except Exception as e:
+            print(f"Failed to insert new user: {e}")
 
         # Query database for newly inserted user
-        with engine.connect() as conn:
-            result_proxy = conn.execute("SELECT * FROM users WHERE username = :username", username=request.form.get("username"))
-        rows = result_proxy.fetchall()
+        try:
+            with engine.connect() as conn:
+                query = text("SELECT * FROM users WHERE username = :username")
+                result_proxy = conn.execute(query.params(username=request.form.get("username")))
+                rows = result_proxy.fetchall()
+                print(f"Query results: {rows}")
+        except Exception as e:
+            print(f"Failed to execute query: {e}")
+            return apology("registration failed", 500)
+
+        if len(rows) == 0:
+            print("No user found with the specified username.")
+        else:
+            rows = []
 
         # Remember which user has logged in
-        session["user_id"] = rows[0]["id"]
+        if rows:
+            session["user_id"] = rows[0]["id"]
+        else:
+            print("No user found with the specified username.")
 
         # Redirect user to home page
         return redirect("/")
@@ -171,17 +205,23 @@ def login():
         elif not request.form.get("password"):
             return apology("must provide password", 403)
 
-        # Query database for username
-        with engine.connect() as conn:
-            result_proxy = conn.execute("SELECT * FROM users WHERE username = :username", username=request.form.get("username"))
-        rows = result_proxy.fetchall()
+        # Query database for user
+        try:
+            with engine.connect() as conn:
+                query = text("SELECT * FROM users WHERE username = :username")
+                result_proxy = conn.execute(query.params(username=request.form.get("username")))
+                rows = result_proxy.fetchall()
+                print(f"Query results: {rows}")
+        except Exception as e:
+            print(f"Failed to execute query: {e}")
+            return apology("login failed", 500)
 
-        # Ensure username exists and password is correct
-        if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
+        # Assuming that 'id' is the first column, 'username' is the second column, and 'hash' is the third column in your 'users' table
+        if len(rows) != 1 or not check_password_hash(rows[0][2], request.form.get("password")):
             return apology("invalid username and/or password", 403)
 
         # Remember which user has logged in
-        session["user_id"] = rows[0]["id"]
+        session["user_id"] = rows[0][0]
 
         # Remember the username
         session["username"] = request.form.get("username")
@@ -478,93 +518,57 @@ def fire_ext():
 
 @app.route("/other", methods=["POST", "GET"])
 def other():
-    asset_type = request.form.get('assetType')
-    location = request.form.get('location')
-    # Combine the asset type and location
-    asset = f'{location} - {asset_type}'
-    fault = ''
-    remedy = ''
-    fault = request.form.get("fault")
-    remedy = request.form.get("remedy")
-    comment = request.form.get("comment")
-    #image_url = request.form.get("imageUrl").split(',')
-    print(request.form)  # Logs the form data sent in the request
-    print(asset)  # Logs the door location
-    #print(image_urls)  # Logs the list of image URLs
-    
-    #asset = door
     if request.method == "POST":
-    #     RESULTS[door] = door_fault
-    #     ic(door_fault)
-    #     ic(type(door_fault))
-    #     fault = ''
-    #     remedy = ''
-    #     faultDict = ()
-    #     faultStr = {}
-
-    #     remedyDict = ()
-    #     remedyStr = {}
-
-        # This is working as expected but I have kept the ic views which helped to solve the problem of getting
-        # the strings for the faults and the remedies out of the selection results.
-        # fault=conn.execute("SELECT fault FROM doorfixes WHERE fault_id = :door_fault",
-        #             door_fault=door_fault)
-        # remedy=conn.execute("SELECT remedy FROM doorfixes WHERE fault_id = :door_fault",
-        #             door_fault=door_fault)
-        # ic(remedy)
-        # faultDict   = fault [0]
-        # faultStr = faultDict  ['fault']
-
-        # remedyDict = remedy [0]
-        # remedyStr= remedyDict  ['remedy']
-
-        # The strings were saved into these variables to build the results table below. I have left some of the
-        # "debugging tools" that I used to see what was being passed around.
-        # remedy = remedyStr
-        # fault = faultStr
-
-
-        print(fault)
-        print(remedy)
-
-        ic(fault)
-        ic(remedy)
-        ic(type(fault))
-        ic(type(remedy))
-
         from datetime import datetime
+        asset_type = request.form.get('assetType')
+        location = request.form.get('location')
+        asset = f'{location} - {asset_type}'
+        fault = request.form.get("fault")
+        remedy = request.form.get("remedy")
+        comment = request.form.get("comment")
 
-        # Insert a row into the results table
-        with engine.connect() as conn:
-            conn.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)",
-                user_id=session["user_id"], asset=asset, fault_id=0, fault=fault, remedy=remedy, comment=comment, timestamp=datetime.now(eastern_australia_tz))
+        try:
+            session = SqlAlchemySession(bind=engine)
+            session.execute(
+                text("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)"),
+                {
+                    "user_id": flask_session["user_id"],  # get user_id from the session
+                    "asset": asset, 
+                    "fault_id": request.form.get("fault_id") or 0, 
+                    "fault": fault, 
+                    "remedy": remedy, 
+                    "comment": comment, 
+                    "timestamp": datetime.now()
+                }
+            )
+            session.commit()
+            result_id = session.execute(text("SELECT @@IDENTITY AS id")).scalar()
+        except Exception as e:
+            session.rollback()
+            print(f"Failed to execute query: {e}")
+            return apology("fault logging failed", 500)
+        finally:
+            session.close()
 
-            # Get the ID of the last inserted row
-            result_proxy = conn.execute("SELECT last_insert_rowid()")
-            result_id = result_proxy.fetchone()["last_insert_rowid()"]
-
-        # Get the imageUrl string from the form and split it into a list of URLs
         image_urls = request.form.get("imageUrl").split(';')
 
-        print(f"result_id: {result_id}")  # Log the value of result_id
-        print(f"image_urls: {image_urls}")  # Log the value of image_urls
-
         for image_url in image_urls:
-            print(f"image_url: {image_url}")  # Log the value of image_url
             try:
-                print("Inside the try block")  # Log a message
-                with engine.connect() as conn:
-                    conn.execute("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)",
-                        result_id=result_id, image_url=image_url)
+                session = SqlAlchemySession(bind=engine)
+                session.execute("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)",
+                                {"result_id": result_id, "image_url": image_url})
+                session.commit()
             except Exception as e:
-                print(f"An error occurred while inserting into the images table: {e}")
+                session.rollback()
+                print(f"Failed to execute query: {e}")
+                return apology("image logging failed", 500)
+            finally:
+                session.close()
 
         return redirect("/results")
         
     else:
-        return render_template("other.html",  )
-
-
+        return render_template("other.html")
 
 @app.route("/report")
 @login_required
@@ -729,3 +733,23 @@ def debug_users():
         result_proxy = conn.execute("SELECT username FROM users")
         rows = [row["username"] for row in result_proxy.fetchall()]
     return jsonify(rows)
+
+from sqlalchemy.orm import Session
+
+@app.route('/test_insert', methods=['GET'])
+def test_insert():
+    from datetime import datetime
+    with Session(engine) as session:
+        query = text("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)")
+        params = {
+            "user_id": 59,  # replace with a valid user_id
+            "asset": "Test Asset",
+            "fault_id": 0,  # replace with a valid fault_id
+            "fault": "Test Fault",
+            "remedy": "Test Remedy",
+            "comment": "Test Comment",
+            "timestamp": datetime.now()
+        }
+        result_proxy = session.execute(query, params)
+        session.commit()
+    return f"Rows inserted: {result_proxy.rowcount}"
