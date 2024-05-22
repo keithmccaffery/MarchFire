@@ -253,6 +253,70 @@ def logout():
 # results table and will thus be seen in the final report.
 
 
+@app.route('/doors', methods=['GET', 'POST'])
+def doors():
+    asset_type = request.form.get('assetType')
+    location = request.form.get('location')
+    # Combine the asset type and location
+    door = f'{location} - {asset_type}'
+
+    door_fault = request.form.get("door_fault")
+    comment = request.form.get("comment")
+    #image_url = request.form.get("imageUrl").split(',')
+    print(request.form)  # Logs the form data sent in the request
+    print(door)  # Logs the door location
+    #print(image_urls)  # Logs the list of image URLs
+    fault = ''
+    remedy = ''
+    asset = door
+    if request.method == "POST":
+        RESULTS[door] = door_fault
+        ic(door_fault)
+        ic(type(door_fault))
+        fault = ''
+        remedy = ''
+        faultDict = ()
+        faultStr = {}
+
+        remedyDict = ()
+        remedyStr = {}
+        try:
+               
+            session = SqlAlchemySession(bind=engine)
+            session.execute(
+                text("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)"),
+                {
+                    "user_id": flask_session["user_id"],  # get user_id from the session
+                    "asset": asset, 
+                    "fault_id": door_fault, 
+                    "fault": fault, 
+                    "remedy": remedy, 
+                    "comment": comment, 
+                    "timestamp": datetime.now(eastern_australia_tz)
+                }
+            )
+            session.commit()
+            result_id = session.execute(text("SELECT @@IDENTITY AS id")).scalar()
+
+            # Get the imageUrl string from the form and split it into a list of URLs
+            image_urls = request.form.get("imageUrl").split(';')
+
+            for image_url in image_urls:
+                session.execute(
+                    text("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)"),
+                    {"result_id": result_id, "image_url": image_url}
+                )
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Failed to execute query: {e}")
+        finally:
+            session.close()
+
+        return redirect("/results")
+    else:
+            return render_template("doors.html",  door_faults=DOOR_FAULTS)       
+"""
 @app.route("/doors", methods=["POST", "GET"])
 def doors():
     asset_type = request.form.get('assetType')
@@ -337,7 +401,7 @@ def doors():
     else:
         return render_template("doors.html",  door_faults=DOOR_FAULTS)
 
-
+"""
 # These following functions could be completed as per the doors method above, however, since hearing about OOP
 # it maybe better to write app.py having classes producing the objects.
 @app.route("/em_lights", methods=["POST", "GET"])
@@ -572,24 +636,28 @@ def other():
     else:
         return render_template("other.html")
 
-@app.route("/report")
+@app.route('/report', methods=['GET'])
 @login_required
 def report():
-    """Show report of results for the building"""
-    # Query database for user's results, ordered by the most recent first. Maybe need to put a time cut off when printing this report.
-    with engine.connect() as conn:
-        result_proxy = conn.execute(
-            """
-            SELECT results.*, images.image_url 
-            FROM results 
-            LEFT JOIN images ON results.id = images.result_id 
-            WHERE results.user_id = :user_id 
-            ORDER BY results.timestamp DESC 
-            LIMIT 10
-            """, 
-            user_id=session["user_id"]
+    try:
+        session = SqlAlchemySession(bind=engine)
+        result_proxy = session.execute(
+            text("""
+                SELECT results.*, images.image_url 
+                FROM results 
+                LEFT JOIN images ON results.id = images.result_id 
+                WHERE results.user_id = :user_id 
+                ORDER BY results.timestamp DESC
+            """), 
+            {"user_id": flask_session["user_id"]}
         )
-        results = [dict(row) for row in result_proxy.fetchall()]
+        keys = result_proxy.keys()
+        results = [dict(zip(keys, row)) for row in result_proxy.fetchall()]
+    except Exception as e:
+        print(f"Failed to execute query: {e}")
+        results = []
+    finally:
+        session.close()
 
     # Group results by result_id, each result will have a list of image_urls
     grouped_results = {}
@@ -600,7 +668,8 @@ def report():
         grouped_results[result['id']]['image_urls'].append(result['image_url'])
 
     # Render history page with defects
-    return render_template("report.html", results=grouped_results.values(), username=session['username'])
+    return render_template("report.html", results=grouped_results.values(), username=flask_session['username'])
+
 @app.route('/results')
 @login_required
 def results():
