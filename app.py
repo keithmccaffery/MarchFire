@@ -641,6 +641,7 @@ def other():
 def report():
     try:
         session = SqlAlchemySession(bind=engine)
+        print(f"user_id: {flask_session['user_id']}")  # Print the user_id
         result_proxy = session.execute(
             text("""
                 SELECT results.*, images.image_url 
@@ -704,35 +705,34 @@ def results():
     # Render history page with defects
     return render_template("results.html", results=results, username=flask_session['username'])
 
-
+from sqlalchemy import text
 @app.route('/create_pdf', methods=['POST'])
+@login_required
 def create_pdf():
-     # Create the flowables list
-    flowables = []
-    # Fetch the data from the database
-    with engine.connect() as conn:
-        result_proxy = conn.execute("""
-            SELECT results.*, images.image_url 
-            FROM results 
-            LEFT JOIN images ON results.id = images.result_id 
-            WHERE results.user_id = :user_id 
-            ORDER BY results.timestamp DESC 
-            LIMIT 10
-            """, 
-            user_id=session["user_id"]
+    try:
+        session = SqlAlchemySession(bind=engine)
+        print(f"user_id: {flask_session['user_id']}")  # Print the user_id
+        result_proxy = session.execute(
+            text("""
+                SELECT results.*, images.image_url 
+                FROM results 
+                LEFT JOIN images ON results.id = images.result_id 
+                WHERE results.user_id = :user_id 
+                ORDER BY results.timestamp DESC
+            """), 
+            {"user_id": flask_session["user_id"]}
         )
-        results = [dict(row) for row in result_proxy.fetchall()]
+        keys = result_proxy.keys()
+        results = [dict(zip(keys, row)) for row in result_proxy.fetchall()]
+        print(f"SQL query returned {len(results)} results")  # Print the number of results
+    except Exception as e:
+        print(f"Failed to execute query: {e}")
+        print(f"Exception type: {type(e)}")
+        print(f"Exception message: {e}")
+        results = []
+    finally:
+        session.close()
 
-    for result in results:
-        if result['image_url']:
-            # Print the image URL
-            print(f"Image URL: {result['image_url']}")
-            # Reduce the width of the image
-            #img = Image(result['image_url'], width=200)  # Reduced from 400 to 300
-           
-        else:
-            print(f"Warning: Empty image URL for result {result['id']}")
-            # Skip adding an image to the PDF
     # Group results by result_id, each result will have a list of image_urls
     grouped_results = {}
     for result in results:
@@ -740,7 +740,11 @@ def create_pdf():
             grouped_results[result['id']] = result
             grouped_results[result['id']]['image_urls'] = []
         grouped_results[result['id']]['image_urls'].append(result['image_url'])
+        print(f"Added result with ID {result['id']} to grouped_results")  # Print the ID of each result
 
+    # Rest of your code...
+
+   
     # Create a file-like buffer to receive PDF data
     buffer = BytesIO()
     # class MyPageTemplate(PageTemplate):
@@ -765,16 +769,19 @@ def create_pdf():
 
     # Create a Paragraph
     styles = getSampleStyleSheet()
-
+    flowables = []
     print(grouped_results)
-
-# Add the flowables for each result
+    print(f"grouped_results: {grouped_results}")
+    # Add the flowables for each result
     for result_id, result in grouped_results.items():
         keys = ['asset', 'fault_id', 'fault', 'remedy', 'comment']
         for key in keys:
-            text = f"{key.capitalize()}: {result[key]}"
-            print(text)
-            paragraph = Paragraph(text, styles['Normal'])
+            paragraph_text = ""  # Renamed variable
+            print(f"Key: {key}")
+            print(f"Value: {result.get(key, 'Not found')}")
+            paragraph_text = f"{key.capitalize()}: {result.get(key, 'Not found')}"  # Renamed variable
+            print(paragraph_text)  # Renamed variable
+            paragraph = Paragraph(paragraph_text, styles['Normal'])  # Renamed variable
             flowables.append(paragraph)
         flowables.append(Spacer(1, 20))
 
