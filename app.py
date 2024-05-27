@@ -283,6 +283,19 @@ def doors():
         try:
                
             session = SqlAlchemySession(bind=engine)
+            # Fetch the fault and remedy from the doors table
+            result_proxy = session.execute(text("SELECT fault, remedy FROM doorfixes WHERE fault_id = :door_fault"), {"door_fault": door_fault})
+            result = result_proxy.fetchone()
+            print("Result:", result)
+            print("Type of result:", type(result))
+            if result is not None:
+                result_dict = result._asdict()  # convert the Row to a dictionary
+                fault = result_dict['fault']
+                remedy = result_dict['remedy']
+            else:
+                print("No result found for fault_id:", door_fault)
+
+
             session.execute(
                 text("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)"),
                 {
@@ -434,15 +447,26 @@ def em_lights():
         remedyDict = ()
         remedyStr = {}
 
-        # Fetch the fault and remedy
-        with engine.connect() as conn:
-            result_proxy = conn.execute("SELECT fault FROM em_lightfixes WHERE fault_id = :light_fault", light_fault=light_fault)
-            faultDict = dict(result_proxy.fetchone())
-            faultStr = faultDict['fault']
+        session = SqlAlchemySession(bind=engine)
 
-            result_proxy = conn.execute("SELECT remedy FROM em_lightfixes WHERE fault_id = :light_fault", light_fault=light_fault)
-            remedyDict = dict(result_proxy.fetchone())
+        # Fetch the fault
+        from sqlalchemy import text 
+        result_proxy = session.execute(text("SELECT fault FROM em_lightfixes WHERE fault_id = :light_fault"), {"light_fault": light_fault})
+        result = result_proxy.fetchone()
+        if result is not None:
+            faultDict = result._asdict()  # convert the Row to a dictionary
+            faultStr = faultDict['fault']
+        else:
+            print("No result found for fault_id:", light_fault)
+
+        # Fetch the remedy
+        result_proxy = session.execute(text("SELECT remedy FROM em_lightfixes WHERE fault_id = :light_fault"), {"light_fault": light_fault})
+        result = result_proxy.fetchone()
+        if result is not None:
+            remedyDict = result._asdict()  # convert the Row to a dictionary
             remedyStr = remedyDict['remedy']
+        else:
+            print("No result found for fault_id:", light_fault)
 
         # The strings were saved into these variables to build the results table below.
         remedy = remedyStr
@@ -458,14 +482,17 @@ def em_lights():
 
         from datetime import datetime
 
-        # Insert a row into the results table
-        with engine.connect() as conn:
-            conn.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)",
-                user_id=session["user_id"], asset=asset, fault_id=light_fault, fault=fault, remedy=remedy, comment=comment, timestamp=datetime.now(eastern_australia_tz))
+        from sqlalchemy import text
 
-            # Get the ID of the last inserted row
-            result_proxy = conn.execute("SELECT last_insert_rowid()")
-            result_id = result_proxy.fetchone()["last_insert_rowid()"]
+        # Insert a row into the results table
+        session.execute(text("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)"),
+            {"user_id": flask_session["user_id"], "asset": asset, "fault_id": light_fault, "fault": fault, "remedy": remedy, "comment": comment, "timestamp": datetime.now(eastern_australia_tz)})
+
+        # Get the ID of the last inserted row
+        result_id = session.execute(text("SELECT @@IDENTITY AS id")).scalar()
+
+        # Commit the transaction
+        session.commit()
 
         # Get the imageUrl string from the form and split it into a list of URLs
         image_urls = request.form.get("imageUrl").split(';') 
@@ -477,9 +504,10 @@ def em_lights():
             print(f"image_url: {image_url}")  # Log the value of image_url
             try:
                 print("Inside the try block")  # Log a message
-                with engine.connect() as conn:
-                    conn.execute("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)",
-                        result_id=result_id, image_url=image_url)
+                session.execute(text("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)"),
+                    {"result_id": result_id, "image_url": image_url})
+                # Commit the transaction
+                session.commit()
             except Exception as e:
                 print(f"An error occurred while inserting into the images table: {e}")
 
@@ -527,14 +555,26 @@ def fire_ext():
         # This is working as expected but I have kept the ic views which helped to solve the problem of getting
         # the strings for the faults and the remedies out of the selection results.
         # Fetch the fault and remedy
-        with engine.connect() as conn:
-            result_proxy = conn.execute("SELECT fault FROM fireEXfixes WHERE fault_id = :fireEx_fault", fireEx_fault=fireEx_fault)
-            faultDict = dict(result_proxy.fetchone())
+      
+        session = SqlAlchemySession(bind=engine)
+        from sqlalchemy import text
+        # Fetch the fault
+        result_proxy = session.execute(text("SELECT fault FROM fireEXfixes WHERE fault_id = :fireEx_fault"), {"fireEx_fault": fireEx_fault})
+        result = result_proxy.fetchone()
+        if result is not None:
+            faultDict = result._asdict()  # convert the Row to a dictionary
             faultStr = faultDict['fault']
+        else:
+            print("No result found for fault_id:", fireEx_fault)
 
-            result_proxy = conn.execute("SELECT remedy FROM fireEXfixes WHERE fault_id = :fireEx_fault", fireEx_fault=fireEx_fault)
-            remedyDict = dict(result_proxy.fetchone())
+        # Fetch the remedy
+        result_proxy = session.execute(text("SELECT remedy FROM fireEXfixes WHERE fault_id = :fireEx_fault"), {"fireEx_fault": fireEx_fault})
+        result = result_proxy.fetchone()
+        if result is not None:
+            remedyDict = result._asdict()  # convert the Row to a dictionary
             remedyStr = remedyDict['remedy']
+        else:
+            print("No result found for fault_id:", fireEx_fault)
 
         # The strings were saved into these variables to build the results table below.
         remedy = remedyStr
@@ -550,17 +590,20 @@ def fire_ext():
 
         from datetime import datetime
 
-        # Insert a row into the results table
-        with engine.connect() as conn:
-            conn.execute("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)",
-                user_id=session["user_id"], asset=asset, fault_id=fireEx_fault, fault=fault, remedy=remedy, comment=comment, timestamp=datetime.now(eastern_australia_tz))
+        from sqlalchemy import text
 
-            # Get the ID of the last inserted row
-            result_proxy = conn.execute("SELECT last_insert_rowid()")
-            result_id = result_proxy.fetchone()["last_insert_rowid()"]
+        # Insert a row into the results table
+        session.execute(text("INSERT INTO results (user_id, asset, fault_id, fault, remedy, comment, timestamp) VALUES (:user_id, :asset, :fault_id, :fault, :remedy, :comment, :timestamp)"),
+            {"user_id": flask_session["user_id"], "asset": asset, "fault_id": fireEx_fault, "fault": fault, "remedy": remedy, "comment": comment, "timestamp": datetime.now(eastern_australia_tz)})
+
+        # Get the ID of the last inserted row
+        result_id = session.execute(text("SELECT @@IDENTITY AS id")).scalar()
+
+        # Commit the transaction
+        session.commit()
 
         # Get the imageUrl string from the form and split it into a list of URLs
-        image_urls = request.form.get("imageUrl").split(';')
+        image_urls = request.form.get("imageUrl").split(';') 
 
         print(f"result_id: {result_id}")  # Log the value of result_id
         print(f"image_urls: {image_urls}")  # Log the value of image_urls
@@ -569,16 +612,20 @@ def fire_ext():
             print(f"image_url: {image_url}")  # Log the value of image_url
             try:
                 print("Inside the try block")  # Log a message
-                with engine.connect() as conn:
-                    conn.execute("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)",
-                        result_id=result_id, image_url=image_url)
+                session.execute(text("INSERT INTO images (result_id, image_url) VALUES (:result_id, :image_url)"),
+                    {"result_id": result_id, "image_url": image_url})
+                # Commit the transaction
+                session.commit()
             except Exception as e:
                 print(f"An error occurred while inserting into the images table: {e}")
 
         return redirect("/results")
-        
+            
+    # The else statement has been removed as it was not associated with an if statement
     else:
         return render_template("fire_ext.html",  fireEx_faults=FIREEX_FAULTS)
+
+
 
 @app.route("/other", methods=["POST", "GET"])
 def other():
