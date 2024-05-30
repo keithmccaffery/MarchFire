@@ -13,3 +13,4 @@ azure-identity==1.6.0
 azure-keyvault-secrets==4.8.0
 mssql==1.0.1
 azure-storage-blob==12.20.0
+cryptography==42.0.7
