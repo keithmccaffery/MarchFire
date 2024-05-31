@@ -42,6 +42,11 @@ import os
 app = Flask(__name__)
 app.secret_key = 'mandy'
 
+if __name__ == '__main__':
+    # Get the port from the 'PORT' environment variable (default: 5000)
+    port = int(os.getenv('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
+
 # Set up Azure Key Vault client
 #keyVaultName = "Coogee"
 #KVUri = f"https://{keyVaultName}.vault.azure.net"
