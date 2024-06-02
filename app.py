@@ -52,7 +52,11 @@ client = SecretClient(vault_url="https://Coogee.vault.azure.net/", credential=cr
 #client = SecretClient(vault_url=KVUri, credential=credential)
 
 # Retrieve connection string from Key Vault
-odbc_conn_str = client.get_secret("DbConnectionString").value
+try:
+    odbc_conn_str = client.get_secret("DbConnectionString").value
+except Exception as e:
+    app.logger.error(f"Error retrieving secret: {e}")
+    raise
 
 # Convert to SQLAlchemy format
 sqlalchemy_conn_str = urllib.parse.quote_plus(odbc_conn_str)
