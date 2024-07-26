@@ -29,7 +29,7 @@ current_time = datetime.now(eastern_australia_tz)
 # Configure application
 app = Flask(__name__)
 
-db = SQL("sqlite:///final.db")
+db = SQL("sqlite:////mnt/myshare/finaldatabase/finaldatabase/final.db")
 RESULTS = {}
 
 DOOR_FAULTS = db.execute("SELECT * FROM doorfixes")
@@ -45,7 +45,7 @@ Session(app)
 
 # Configure CS50 Library to use SQLite database
 # Need to set up some other databases for the assests and the results of the inspections
-db = SQL("sqlite:///final.db")
+
 
 
 

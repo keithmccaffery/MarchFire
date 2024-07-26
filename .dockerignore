@@ -1,0 +1,26 @@
+node_modules
+.git
+*.log
+final.db
+add_column.py
+add_timestampcolmn.py
+create_table.py
+dict.py
+dict2.py
+doorsroute.py
+dump.sql
+em_lightsroute.py
+final_backup.db
+final.db.backup
+FireExt for project Apr24.csv
+html2word.py
+import_data.py
+insert_row0.py
+my_paragraph.pdf
+output.pdf
+pdf_creator.py
+remove_table.py
+rulers.py
+SQLQuery_6.sql
+update_table.py
+venv
